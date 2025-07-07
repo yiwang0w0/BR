@@ -1,9 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-module.exports = function(req, res, next) {
-const jwt = require('jsonwebtoken');
-
-module.exports = function(req, res, next) {
+module.exports = function (req, res, next) {
   const auth = req.headers['authorization'];
   if (!auth || !auth.startsWith('Bearer ')) {
     return res.status(401).json({ code: 1, msg: '未认证' });
@@ -17,6 +14,3 @@ module.exports = function(req, res, next) {
     return res.status(401).json({ code: 1, msg: 'token无效' });
   }
 };
-
-  }
-;
