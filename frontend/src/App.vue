@@ -1,30 +1,29 @@
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
+import { RouterView, RouterLink } from 'vue-router'
 </script>
 
 <template>
   <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="/vite.svg" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://vuejs.org/" target="_blank">
-      <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
-    </a>
+    <nav style="margin-bottom:20px;">
+      <RouterLink to="/rooms" style="margin-right: 15px;">房间大厅</RouterLink>
+      <!-- 你可以继续加更多菜单，如注册、登录、个人中心等 -->
+    </nav>
+    <RouterView />
   </div>
-  <HelloWorld msg="Vite + Vue" />
 </template>
 
 <style scoped>
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+nav {
+  padding: 20px 0;
+  font-size: 18px;
 }
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+a {
+  text-decoration: none;
+  color: #42b983;
+  margin-right: 20px;
 }
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
+a.router-link-exact-active {
+  font-weight: bold;
+  color: #333;
 }
 </style>
