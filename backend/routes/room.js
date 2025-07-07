@@ -1,30 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const { Op } = require('sequelize');
-const sequelize = require('../models/index');
 const auth = require('../middlewares/auth');
+const Room = require('../models/Room');
 
 // 全局 JWT 验证中间件
 router.use(auth);
-
-// 房间表模型
-const { DataTypes } = require('sequelize');
-const Room = sequelize.define('bra_game', {
-  groomid: { type: DataTypes.INTEGER.UNSIGNED, primaryKey: true },
-  gamenum: DataTypes.INTEGER.UNSIGNED,
-  gametype: DataTypes.INTEGER.UNSIGNED,
-  gamestate: DataTypes.INTEGER.UNSIGNED,
-  validnum: DataTypes.INTEGER.UNSIGNED,
-  alivenum: DataTypes.INTEGER.UNSIGNED,
-  deathnum: DataTypes.INTEGER.UNSIGNED,
-  groomtype: DataTypes.INTEGER.UNSIGNED,
-  groomstatus: DataTypes.INTEGER.UNSIGNED,
-  starttime: DataTypes.INTEGER.UNSIGNED,
-  // ...可补充其它字段
-}, {
-  tableName: 'bra_game',
-  timestamps: false,
-});
 
 // 获取所有房间列表
 router.get('/rooms', async (req, res) => {
@@ -37,27 +18,14 @@ router.get('/rooms', async (req, res) => {
   res.json({ code: 0, msg: "ok", data: rooms });
 });
 
-// 创建房间
-router.post('/rooms', async (req, res) => {
-  const { gametype = 1, validnum = 10 } = req.body;
-  const max = await Room.max('groomid');
-  const groomid = (max || 0) + 1;
-  const gamenum = 10000 + groomid;
-
-  await Room.create({
-    groomid,
-    gamenum,
-    gametype,
-    gamestate: 0,
-    validnum,
-    alivenum: validnum,
-    deathnum: 0,
-    groomtype: 1,
-    groomstatus: 0,
-    starttime: Math.floor(Date.now() / 1000)
+// 下一局信息
+router.get('/rooms/next', async (req, res) => {
+  const room = await Room.findOne({
+    where: { gamestate: { [Op.in]: [0, 1] } },
+    order: [['starttime', 'DESC']]
   });
-
-  res.json({ code: 0, msg: '房间创建成功', data: { groomid } });
+  if (!room) return res.json({ code: 1, msg: '暂无房间' });
+  res.json({ code: 0, msg: 'ok', data: room });
 });
 
 // 加入房间
@@ -65,6 +33,10 @@ router.post('/rooms/:id/join', async (req, res) => {
   const groomid = req.params.id;
   const room = await Room.findOne({ where: { groomid } });
   if (!room) return res.json({ code: 1, msg: '房间不存在' });
+  const now = Math.floor(Date.now() / 1000);
+  if (now < room.starttime) {
+    return res.json({ code: 1, msg: '房间尚未开始' });
+  }
 
   const User = require('../models/User');
   const user = await User.findByPk(req.user.uid);
