@@ -12,7 +12,8 @@ module.exports = {
   async add(token) {
     const decoded = jwt.decode(token);
     const expiresAt = decoded?.exp ? new Date(decoded.exp * 1000) : null;
-    await RefreshToken.create({ token, expiresAt });
+    const uid = decoded?.uid;
+    await RefreshToken.create({ uid, token, expiresAt });
     await cleanup();
   },
   async has(token) {

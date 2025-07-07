@@ -24,6 +24,8 @@ describe('Refresh token', function() {
   it('returns access token with uid and username', async function() {
     const refreshToken = jwt.sign({ uid: 1, username: 'foo' }, process.env.REFRESH_SECRET);
     await tokenStore.add(refreshToken);
+    const record = await RefreshToken.findOne({ where: { token: refreshToken } });
+    expect(record.uid).to.equal(1);
     const res = await request(app)
       .post('/refresh')
       .send({ refreshToken })

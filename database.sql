@@ -137,3 +137,12 @@ CREATE TABLE `bra_history` (
   INDEX `WMODE` (`wmode`),
   INDEX `WINNER` (`winner`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=COMPRESSED;
+
+DROP TABLE IF EXISTS `refresh_tokens`;
+CREATE TABLE `refresh_tokens` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `uid` int(10) unsigned NOT NULL,
+  `token` text NOT NULL,
+  `expiresAt` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
