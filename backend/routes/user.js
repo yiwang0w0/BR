@@ -9,7 +9,7 @@ const tokenStore = require('../utils/tokenStore');
 // 注册
 router.post('/register', async (req, res) => {
   const { username, password } = req.body;
-  if(!username || !password) return res.json({ code: 1, msg: "缺少参数" });
+  if (!username || !password) return res.json({ code: 1, msg: "缺少参数" });
 
   const exist = await User.findOne({ where: { username } });
   if (exist) return res.json({ code: 1, msg: "用户名已存在" });
@@ -23,7 +23,7 @@ router.post('/register', async (req, res) => {
 // 登录
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
-  if(!username || !password) return res.json({ code: 1, msg: "缺少参数" });
+  if (!username || !password) return res.json({ code: 1, msg: "缺少参数" });
 
   const user = await User.findOne({ where: { username } });
   if (!user) return res.json({ code: 1, msg: "用户不存在" });
@@ -73,9 +73,12 @@ router.post('/logout', (req, res) => {
   res.json({ code: 0, msg: '已登出' });
 });
 
-// 获取当前用户信息
+// 获取当前用户信息（推荐只保留下面这种方式）
 router.get('/user/me', auth, async (req, res) => {
-  const user = await User.findOne({ where: { uid: req.user.uid }, attributes: ['uid', 'username'] });
+  const user = await User.findByPk(req.user.uid, {
+    attributes: { exclude: ['password'] }
+  });
+  if (!user) return res.status(404).json({ code: 1, msg: '用户不存在' });
   res.json({ code: 0, msg: 'ok', data: user });
 });
 
