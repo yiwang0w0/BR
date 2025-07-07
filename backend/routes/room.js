@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const { Op } = require('sequelize');
 const sequelize = require('../models/index');
+const auth = require('../middlewares/auth');
+
+router.use(auth);
 
 // 建房间表模型
 const { DataTypes } = require('sequelize');

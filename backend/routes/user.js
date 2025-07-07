@@ -3,6 +3,8 @@ const router = express.Router();
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const auth = require('../middlewares/auth');
+const tokenStore = require('../utils/tokenStore');
 
 // 注册
 router.post('/register', async (req, res) => {
@@ -29,10 +31,52 @@ router.post('/login', async (req, res) => {
   const ok = bcrypt.compareSync(password, user.password);
   if (!ok) return res.json({ code: 1, msg: "密码错误" });
 
-  // 生成JWT
-  const token = jwt.sign({ uid: user.uid, username: user.username }, process.env.JWT_SECRET, { expiresIn: '7d' });
+  const accessToken = jwt.sign(
+    { uid: user.uid, username: user.username },
+    process.env.JWT_SECRET,
+    { expiresIn: '15m' }
+  );
 
-  res.json({ code: 0, msg: "登录成功", token });
+  const refreshToken = jwt.sign(
+    { uid: user.uid },
+    process.env.REFRESH_SECRET,
+    { expiresIn: '7d' }
+  );
+  tokenStore.add(refreshToken);
+
+  res.json({ code: 0, msg: "登录成功", accessToken, refreshToken });
+});
+
+// 刷新 access token
+router.post('/refresh', (req, res) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) return res.status(401).json({ code: 1, msg: '缺少参数' });
+  if (!tokenStore.has(refreshToken)) return res.status(403).json({ code: 1, msg: 'refresh token 无效' });
+
+  try {
+    const payload = jwt.verify(refreshToken, process.env.REFRESH_SECRET);
+    const accessToken = jwt.sign(
+      { uid: payload.uid, username: payload.username },
+      process.env.JWT_SECRET,
+      { expiresIn: '15m' }
+    );
+    res.json({ code: 0, msg: 'ok', accessToken });
+  } catch (err) {
+    res.status(403).json({ code: 1, msg: 'refresh token 无效' });
+  }
+});
+
+// 注销
+router.post('/logout', (req, res) => {
+  const { refreshToken } = req.body;
+  if (refreshToken) tokenStore.remove(refreshToken);
+  res.json({ code: 0, msg: '已登出' });
+});
+
+// 获取当前用户信息
+router.get('/user/me', auth, async (req, res) => {
+  const user = await User.findOne({ where: { uid: req.user.uid }, attributes: ['uid', 'username'] });
+  res.json({ code: 0, msg: 'ok', data: user });
 });
 
 module.exports = router;

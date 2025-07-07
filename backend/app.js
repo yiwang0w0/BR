@@ -20,9 +20,6 @@ sequelize.authenticate()
 // 健康检查
 app.get('/api/ping', (req, res) => res.send('pong'));
 
-// 用户注册/登录接口
-app.use('/api', userRouter);
-
 // TODO: 以后可以继续挂载其他路由，比如：
 // const roomRouter = require('./routes/room');
 // app.use('/api', roomRouter);
