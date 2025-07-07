@@ -3,6 +3,7 @@ const router = express.Router();
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const auth = require('../middlewares/auth');
 
 // 注册
 router.post('/register', async (req, res) => {
@@ -33,6 +34,15 @@ router.post('/login', async (req, res) => {
   const token = jwt.sign({ uid: user.uid, username: user.username }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
   res.json({ code: 0, msg: "登录成功", token });
+});
+
+// 获取当前用户信息
+router.get('/user/me', auth, async (req, res) => {
+  const user = await User.findByPk(req.user.uid, {
+    attributes: { exclude: ['password'] }
+  });
+  if (!user) return res.status(404).json({ code: 1, msg: '用户不存在' });
+  res.json({ code: 0, msg: 'ok', data: user });
 });
 
 module.exports = router;
