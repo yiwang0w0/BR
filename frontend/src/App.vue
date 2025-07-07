@@ -6,7 +6,11 @@ import { RouterView, RouterLink } from 'vue-router'
   <div>
     <nav style="margin-bottom:20px;">
       <RouterLink to="/rooms" style="margin-right: 15px;">房间大厅</RouterLink>
-      <!-- 你可以继续加更多菜单，如注册、登录、个人中心等 -->
+      <RouterLink to="/login" style="margin-right: 15px;">登录</RouterLink>
+      <RouterLink to="/register" style="margin-right: 15px;">注册</RouterLink>
+      <RouterLink to="/user" style="margin-right: 15px;">个人中心</RouterLink>
+      <RouterLink to="/messages" style="margin-right: 15px;">消息</RouterLink>
+      <RouterLink to="/history" style="margin-right: 15px;">历史对局</RouterLink>
     </nav>
     <RouterView />
   </div>
