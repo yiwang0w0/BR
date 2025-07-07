@@ -4,6 +4,7 @@ const cors = require('cors');
 const sequelize = require('./models/index'); // 数据库连接
 const userRouter = require('./routes/user'); // 用户相关路由
 const roomRouter = require('./routes/room');
+const { scheduleRooms } = require('./utils/scheduler');
 
 
 const app = express();
@@ -16,6 +17,8 @@ app.use('/api', roomRouter);
 sequelize.authenticate()
   .then(() => console.log('数据库连接成功！'))
   .catch(err => console.error('数据库连接失败：', err));
+
+scheduleRooms();
 
 // 健康检查
 app.get('/api/ping', (req, res) => res.send('pong'));
