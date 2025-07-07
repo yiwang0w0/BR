@@ -34,4 +34,35 @@ router.get('/rooms', async (req, res) => {
   res.json({ code: 0, msg: "ok", data: rooms });
 });
 
+// 创建房间
+router.post('/rooms', async (req, res) => {
+  const { gametype = 1, validnum = 10 } = req.body;
+  const max = await Room.max('groomid');
+  const groomid = (max || 0) + 1;
+  const gamenum = 10000 + groomid;
+
+  await Room.create({
+    groomid,
+    gamenum,
+    gametype,
+    gamestate: 0,
+    validnum,
+    alivenum: validnum,
+    deathnum: 0,
+    groomtype: 1,
+    groomstatus: 0,
+    starttime: Math.floor(Date.now() / 1000)
+  });
+
+  res.json({ code: 0, msg: '房间创建成功', data: { groomid } });
+});
+
+// 获取房间详情
+router.get('/game/:groomid', async (req, res) => {
+  const { groomid } = req.params;
+  const room = await Room.findOne({ where: { groomid } });
+  if (!room) return res.json({ code: 1, msg: '房间不存在' });
+  res.json({ code: 0, msg: 'ok', data: room });
+});
+
 module.exports = router;

@@ -17,20 +17,29 @@
 
 <script setup>
 import { reactive } from 'vue'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
+import { ElMessage } from 'element-plus'
 
 const form = reactive({
   username: '',
   password: ''
 })
+const router = useRouter()
 
 async function onSubmit() {
-  // TODO: 接入 /api/login
-  console.log('login submit', form)
   try {
-    const res = await axios.post('http://localhost:3000/api/login', form)
-    console.log(res.data)
+    const res = await axios.post('/login', form)
+    if (res.data.code === 0) {
+      localStorage.setItem('token', res.data.token)
+      axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`
+      ElMessage.success('登录成功')
+      router.push('/')
+    } else {
+      ElMessage.error(res.data.msg || '登录失败')
+    }
   } catch (e) {
+    ElMessage.error('网络错误')
     console.error(e)
   }
 }

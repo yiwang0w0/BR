@@ -17,19 +17,27 @@
 
 <script setup>
 import { reactive } from 'vue'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
+import { ElMessage } from 'element-plus'
 
 const form = reactive({
   username: '',
   password: ''
 })
+const router = useRouter()
 
 async function onSubmit() {
-  // TODO: 接入 /api/register
   try {
-    const res = await axios.post('http://localhost:3000/api/register', form)
-    console.log(res.data)
+    const res = await axios.post('/register', form)
+    if (res.data.code === 0) {
+      ElMessage.success('注册成功')
+      router.push('/login')
+    } else {
+      ElMessage.error(res.data.msg || '注册失败')
+    }
   } catch (e) {
+    ElMessage.error('网络错误')
     console.error(e)
   }
 }
