@@ -4,7 +4,8 @@ const sequelize = require('./index');
 const User = sequelize.define('bra_users', {
   uid: { type: DataTypes.INTEGER.UNSIGNED, primaryKey: true, autoIncrement: true },
   username: { type: DataTypes.STRING(15), unique: true, allowNull: false, defaultValue: '' },
-  password: { type: DataTypes.STRING(100), allowNull: false, defaultValue: '' },
+  // bcrypt hash 长度固定为 60
+  password: { type: DataTypes.STRING(60), allowNull: false, defaultValue: '' },
   alt_pswd: { type: DataTypes.TINYINT.UNSIGNED, allowNull: false, defaultValue: 0 },
   ip: { type: DataTypes.STRING(15), allowNull: false, defaultValue: '' },
   groupid: { type: DataTypes.TINYINT.UNSIGNED, allowNull: false, defaultValue: 0 },
