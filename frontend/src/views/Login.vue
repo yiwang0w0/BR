@@ -10,6 +10,7 @@
       </el-form-item>
       <el-form-item>
         <el-button type="primary" @click="onSubmit">登录</el-button>
+        <el-button type="success" @click="router.push('/register')" style="margin-left:10px">注册</el-button>
       </el-form-item>
     </el-form>
   </el-card>
@@ -20,18 +21,20 @@ import { reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import http from '../utils/http'
 import { ElMessage } from 'element-plus'
+import { useAuthStore } from '../stores/auth'
 
 const form = reactive({
   username: '',
   password: ''
 })
 const router = useRouter()
+const auth = useAuthStore()
 
 async function onSubmit() {
   try {
     const res = await http.post('/login', form)
     if (res.data.code === 0) {
-      localStorage.setItem('token', res.data.token)
+      auth.setTokens(res.data.accessToken, res.data.refreshToken)
       ElMessage.success('登录成功')
       router.push('/')
     } else {

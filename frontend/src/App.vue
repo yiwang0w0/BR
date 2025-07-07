@@ -1,13 +1,22 @@
 <script setup>
-import { RouterView, RouterLink } from 'vue-router'
+import { RouterView, RouterLink, useRouter } from 'vue-router'
+import { useAuthStore } from './stores/auth'
+const auth = useAuthStore()
+const router = useRouter()
+function logout() {
+  auth.logout()
+  router.push('/')
+}
 </script>
 
 <template>
   <div>
     <nav style="margin-bottom:20px;">
+      <RouterLink to="/" style="margin-right: 15px;">首页</RouterLink>
       <RouterLink to="/rooms" style="margin-right: 15px;">房间大厅</RouterLink>
-      <RouterLink to="/login" style="margin-right: 15px;">登录</RouterLink>
-      <RouterLink to="/register" style="margin-right: 15px;">注册</RouterLink>
+      <RouterLink v-if="!auth.isLoggedIn()" to="/login" style="margin-right: 15px;">登录</RouterLink>
+      <RouterLink v-if="!auth.isLoggedIn()" to="/register" style="margin-right: 15px;">注册</RouterLink>
+      <a v-else href="#" style="margin-right: 15px;" @click.prevent="logout">注销</a>
       <RouterLink to="/user" style="margin-right: 15px;">个人中心</RouterLink>
       <RouterLink to="/messages" style="margin-right: 15px;">消息</RouterLink>
       <RouterLink to="/history" style="margin-right: 15px;">历史对局</RouterLink>
