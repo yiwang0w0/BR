@@ -14,10 +14,13 @@ router.post('/register', async (req, res) => {
   const exist = await User.findOne({ where: { username } });
   if (exist) return res.json({ code: 1, msg: "用户名已存在" });
 
-  const hash = bcrypt.hashSync(password, 10);
-  await User.create({ username, password: hash });
-
-  res.json({ code: 0, msg: "注册成功" });
+  try {
+    const hash = await bcrypt.hash(password, 10);
+    await User.create({ username, password: hash });
+    res.json({ code: 0, msg: "注册成功" });
+  } catch (err) {
+    res.status(500).json({ code: 1, msg: '服务器错误' });
+  }
 });
 
 // 登录
@@ -28,14 +31,16 @@ router.post('/login', async (req, res) => {
   const user = await User.findOne({ where: { username } });
   if (!user) return res.json({ code: 1, msg: "用户不存在" });
 
-  const ok = bcrypt.compareSync(password, user.password);
-  if (!ok) return res.json({ code: 1, msg: "密码错误" });
+  try {
+    const ok = await bcrypt.compare(password, user.password);
+    if (!ok) return res.json({ code: 1, msg: "密码错误" });
 
-  const accessToken = jwt.sign(
-    { uid: user.uid, username: user.username },
-    process.env.JWT_SECRET,
-    { expiresIn: '15m' }
-  );
+    const accessToken = jwt.sign(
+      { uid: user.uid, username: user.username },
+      process.env.JWT_SECRET,
+      { expiresIn: '15m' }
+    );
+
 
   const refreshToken = jwt.sign(
     { uid: user.uid, username: user.username },
@@ -44,7 +49,10 @@ router.post('/login', async (req, res) => {
   );
   await tokenStore.add(refreshToken);
 
-  res.json({ code: 0, msg: "登录成功", accessToken, refreshToken });
+    res.json({ code: 0, msg: "登录成功", accessToken, refreshToken });
+  } catch (err) {
+    res.status(500).json({ code: 1, msg: '服务器错误' });
+  }
 });
 
 // 刷新 access token
