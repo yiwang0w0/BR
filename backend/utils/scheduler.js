@@ -1,11 +1,19 @@
 const cron = require('node-cron');
 const Room = require('../models/Room');
 const config = require('../config/gameConfig');
+const npc = require('./npc');
 
 async function createRoom() {
   const max = await Room.max('groomid');
   const groomid = (max || 0) + 1;
   const gamenum = 10000 + groomid;
+  const gamevars = {
+    players: {},
+    map: [],
+    log: [],
+    turn: 0,
+    npcs: npc.initNpcs()
+  };
   await Room.create({
     groomid,
     gamenum,
@@ -17,7 +25,7 @@ async function createRoom() {
     groomtype: 1,
     groomstatus: 0,
     starttime: Math.floor(Date.now() / 1000),
-    gamevars: JSON.stringify({ players: {}, map: [], log: [], turn: 0 })
+    gamevars: JSON.stringify(gamevars)
   });
 }
 
