@@ -82,4 +82,18 @@ router.get('/user/me', auth, async (req, res) => {
   res.json({ code: 0, msg: 'ok', data: user });
 });
 
+// 更新当前用户信息
+router.put('/user/me', auth, async (req, res) => {
+  const { motto, gender, killmsg, lastword } = req.body;
+  const user = await User.findByPk(req.user.uid);
+  if (!user) return res.status(404).json({ code: 1, msg: '用户不存在' });
+  await user.update({
+    motto: motto ?? user.motto,
+    gender: gender ?? user.gender,
+    killmsg: killmsg ?? user.killmsg,
+    lastword: lastword ?? user.lastword,
+  });
+  res.json({ code: 0, msg: '更新成功' });
+});
+
 module.exports = router;
