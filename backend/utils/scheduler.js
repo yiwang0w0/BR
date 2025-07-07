@@ -16,7 +16,8 @@ async function createRoom() {
     deathnum: 0,
     groomtype: 1,
     groomstatus: 0,
-    starttime: Math.floor(Date.now() / 1000)
+    starttime: Math.floor(Date.now() / 1000),
+    gamevars: JSON.stringify({ players: {}, map: [], log: [], turn: 0 })
   });
 }
 
