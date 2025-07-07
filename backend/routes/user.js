@@ -42,7 +42,7 @@ router.post('/login', async (req, res) => {
     process.env.REFRESH_SECRET,
     { expiresIn: '7d' }
   );
-  tokenStore.add(refreshToken);
+  await tokenStore.add(refreshToken);
 
   res.json({ code: 0, msg: "登录成功", accessToken, refreshToken });
 });
@@ -51,7 +51,7 @@ router.post('/login', async (req, res) => {
 router.post('/refresh', async (req, res) => {
   const { refreshToken } = req.body;
   if (!refreshToken) return res.status(401).json({ code: 1, msg: '缺少参数' });
-  if (!tokenStore.has(refreshToken)) return res.status(403).json({ code: 1, msg: 'refresh token 无效' });
+  if (!await tokenStore.has(refreshToken)) return res.status(403).json({ code: 1, msg: 'refresh token 无效' });
 
   try {
     const payload = jwt.verify(refreshToken, process.env.REFRESH_SECRET);
@@ -73,9 +73,9 @@ router.post('/refresh', async (req, res) => {
 });
 
 // 注销
-router.post('/logout', (req, res) => {
+router.post('/logout', async (req, res) => {
   const { refreshToken } = req.body;
-  if (refreshToken) tokenStore.remove(refreshToken);
+  if (refreshToken) await tokenStore.remove(refreshToken);
   res.json({ code: 0, msg: '已登出' });
 });
 
