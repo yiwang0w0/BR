@@ -16,21 +16,20 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
+import { ElMessage } from 'element-plus'
 
 const user = ref(null)
 
 onMounted(async () => {
-  // TODO: 通过 /api/user/me 获取登录用户信息
   try {
-    const res = await axios.get('http://localhost:3000/api/user/me', {
-      headers: {
-        Authorization: 'Bearer ' + localStorage.getItem('token')
-      }
-    })
+    const res = await axios.get('/user/me')
     if(res.data.code === 0){
       user.value = res.data.data
+    } else {
+      ElMessage.error(res.data.msg || '获取失败')
     }
   } catch(e){
+    ElMessage.error('网络错误')
     console.error(e)
   }
 })
