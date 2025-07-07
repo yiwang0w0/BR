@@ -38,7 +38,7 @@ router.post('/login', async (req, res) => {
   );
 
   const refreshToken = jwt.sign(
-    { uid: user.uid },
+    { uid: user.uid, username: user.username },
     process.env.REFRESH_SECRET,
     { expiresIn: '7d' }
   );
@@ -48,15 +48,21 @@ router.post('/login', async (req, res) => {
 });
 
 // 刷新 access token
-router.post('/refresh', (req, res) => {
+router.post('/refresh', async (req, res) => {
   const { refreshToken } = req.body;
   if (!refreshToken) return res.status(401).json({ code: 1, msg: '缺少参数' });
   if (!tokenStore.has(refreshToken)) return res.status(403).json({ code: 1, msg: 'refresh token 无效' });
 
   try {
     const payload = jwt.verify(refreshToken, process.env.REFRESH_SECRET);
+    let username = payload.username;
+    if (!username) {
+      const user = await User.findByPk(payload.uid);
+      if (!user) return res.status(404).json({ code: 1, msg: '用户不存在' });
+      username = user.username;
+    }
     const accessToken = jwt.sign(
-      { uid: payload.uid, username: payload.username },
+      { uid: payload.uid, username },
       process.env.JWT_SECRET,
       { expiresIn: '15m' }
     );
