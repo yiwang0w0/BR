@@ -53,15 +53,37 @@ router.get('/game/:groomid', async (req, res) => {
   const { groomid } = req.params;
   const room = await Room.findOne({ where: { groomid } });
   if (!room) return res.json({ code: 1, msg: '房间不存在' });
-  res.json({ code: 0, msg: 'ok', data: room });
+  const data = room.toJSON();
+  try {
+    data.gamevars = JSON.parse(data.gamevars || '{}');
+  } catch (e) {
+    data.gamevars = {};
+  }
+  res.json({ code: 0, msg: 'ok', data });
 });
 
 // 游戏操作示例
 router.post('/game/:groomid/action', async (req, res) => {
   const { groomid } = req.params;
   const { type, params } = req.body;
-  // 这里只是示例，实际逻辑需根据游戏规则实现
-  res.json({ code: 0, msg: '操作已接收', data: { groomid, type, params } });
+  const room = await Room.findOne({ where: { groomid } });
+  if (!room) return res.json({ code: 1, msg: '房间不存在' });
+
+  let game = {};
+  try { game = JSON.parse(room.gamevars || '{}'); } catch (e) {}
+
+  if (type === 'move') {
+    const uid = req.user.uid;
+    if (!game.players) game.players = {};
+    if (!game.players[uid]) game.players[uid] = {};
+    game.players[uid].pos = [params.x, params.y];
+    if (!game.log) game.log = [];
+    game.log.push({ time: Date.now(), uid, type: 'move', pos: [params.x, params.y] });
+    await room.update({ gamevars: JSON.stringify(game) });
+    return res.json({ code: 0, msg: 'ok', data: game });
+  }
+
+  res.json({ code: 1, msg: '未知操作' });
 });
 
 module.exports = router;
