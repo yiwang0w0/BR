@@ -41,7 +41,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import http from '../utils/http'
 import { ElMessage } from 'element-plus'
 
 const rooms = ref([])
@@ -50,19 +50,19 @@ const form = ref({ gametype: 1, validnum: 10 })
 const router = useRouter()
 
 onMounted(async () => {
-  const res = await axios.get('/rooms')
+  const res = await http.get('/rooms')
   if(res.data.code === 0){
     rooms.value = res.data.data
   }
 })
 
 async function createRoom() {
-  const res = await axios.post('/rooms', form.value)
+  const res = await http.post('/rooms', form.value)
   if (res.data.code === 0) {
     ElMessage.success('房间创建成功')
     dialogVisible.value = false
     // 刷新房间列表
-    const list = await axios.get('/rooms')
+    const list = await http.get('/rooms')
     if (list.data.code === 0) {
       rooms.value = list.data.data
     }

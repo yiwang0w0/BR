@@ -18,7 +18,7 @@
 <script setup>
 import { reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import http from '../utils/http'
 import { ElMessage } from 'element-plus'
 
 const form = reactive({
@@ -29,10 +29,9 @@ const router = useRouter()
 
 async function onSubmit() {
   try {
-    const res = await axios.post('/login', form)
+    const res = await http.post('/login', form)
     if (res.data.code === 0) {
       localStorage.setItem('token', res.data.token)
-      axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`
       ElMessage.success('登录成功')
       router.push('/')
     } else {

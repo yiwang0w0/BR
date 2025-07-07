@@ -18,7 +18,7 @@
 <script setup>
 import { reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import http from '../utils/http'
 import { ElMessage } from 'element-plus'
 
 const form = reactive({
@@ -29,7 +29,7 @@ const router = useRouter()
 
 async function onSubmit() {
   try {
-    const res = await axios.post('/register', form)
+    const res = await http.post('/register', form)
     if (res.data.code === 0) {
       ElMessage.success('注册成功')
       router.push('/login')

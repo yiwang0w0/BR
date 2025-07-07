@@ -14,13 +14,13 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import axios from 'axios'
+import http from '../utils/http'
 
 const route = useRoute()
 const room = ref(null)
 
 onMounted(async () => {
-  const res = await axios.get(`/game/${route.params.id}`)
+  const res = await http.get(`/game/${route.params.id}`)
   if (res.data.code === 0) {
     room.value = res.data.data
   }

@@ -15,14 +15,14 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import http from '../utils/http'
 import { ElMessage } from 'element-plus'
 
 const user = ref(null)
 
 onMounted(async () => {
   try {
-    const res = await axios.get('/user/me')
+    const res = await http.get('/user/me')
     if(res.data.code === 0){
       user.value = res.data.data
     } else {
