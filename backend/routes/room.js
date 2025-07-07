@@ -4,7 +4,10 @@ const { Op } = require('sequelize');
 const sequelize = require('../models/index');
 const auth = require('../middlewares/auth');
 
-// 建房间表模型
+// 全局 JWT 验证中间件
+router.use(auth);
+
+// 房间表模型
 const { DataTypes } = require('sequelize');
 const Room = sequelize.define('bra_game', {
   groomid: { type: DataTypes.INTEGER.UNSIGNED, primaryKey: true },
@@ -17,7 +20,7 @@ const Room = sequelize.define('bra_game', {
   groomtype: DataTypes.INTEGER.UNSIGNED,
   groomstatus: DataTypes.INTEGER.UNSIGNED,
   starttime: DataTypes.INTEGER.UNSIGNED,
-  // 可补充其它字段
+  // ...可补充其它字段
 }, {
   tableName: 'bra_game',
   timestamps: false,
@@ -25,7 +28,6 @@ const Room = sequelize.define('bra_game', {
 
 // 获取所有房间列表
 router.get('/rooms', async (req, res) => {
-  // 这里可以筛选"进行中的房间"、"公开房间"等
   const rooms = await Room.findAll({
     attributes: [
       'groomid', 'gamenum', 'gametype', 'gamestate', 'validnum', 'alivenum', 'deathnum', 'groomtype', 'groomstatus', 'starttime'
@@ -59,7 +61,7 @@ router.post('/rooms', async (req, res) => {
 });
 
 // 加入房间
-router.post('/rooms/:id/join', auth, async (req, res) => {
+router.post('/rooms/:id/join', async (req, res) => {
   const groomid = req.params.id;
   const room = await Room.findOne({ where: { groomid } });
   if (!room) return res.json({ code: 1, msg: '房间不存在' });
@@ -83,7 +85,7 @@ router.get('/game/:groomid', async (req, res) => {
 });
 
 // 游戏操作示例
-router.post('/game/:groomid/action', auth, async (req, res) => {
+router.post('/game/:groomid/action', async (req, res) => {
   const { groomid } = req.params;
   const { type, params } = req.body;
   // 这里只是示例，实际逻辑需根据游戏规则实现
