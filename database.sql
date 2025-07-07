@@ -140,9 +140,12 @@ CREATE TABLE `bra_history` (
 
 DROP TABLE IF EXISTS `refresh_tokens`;
 CREATE TABLE `refresh_tokens` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `uid` int(10) unsigned NOT NULL,
-  `token` text NOT NULL,
-  `expiresAt` datetime DEFAULT NULL,
-  PRIMARY KEY (`id`)
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `token` VARCHAR(512) NOT NULL,
+  `uid` MEDIUMINT(8) UNSIGNED NOT NULL,
+  `expiresAt` DATETIME NOT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `token` (`token`),
+  INDEX `uid` (`uid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

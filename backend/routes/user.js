@@ -24,6 +24,7 @@ router.post('/register', async (req, res) => {
 });
 
 // 登录
+// 登录
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.json({ code: 1, msg: "缺少参数" });
@@ -41,19 +42,21 @@ router.post('/login', async (req, res) => {
       { expiresIn: '15m' }
     );
 
-
-  const refreshToken = jwt.sign(
-    { uid: user.uid, username: user.username },
-    process.env.REFRESH_SECRET,
-    { expiresIn: '7d' }
-  );
-  await tokenStore.add(refreshToken);
+    const refreshToken = jwt.sign(
+      { uid: user.uid, username: user.username },
+      process.env.REFRESH_SECRET,
+      { expiresIn: '7d' }
+    );
+    await tokenStore.add(refreshToken);
 
     res.json({ code: 0, msg: "登录成功", accessToken, refreshToken });
   } catch (err) {
-    res.status(500).json({ code: 1, msg: '服务器错误' });
+    // 把错误详细返回
+    console.error('[Login error]', err);
+    res.status(500).json({ code: 1, msg: '服务器错误', error: err.message });
   }
 });
+
 
 // 刷新 access token
 router.post('/refresh', async (req, res) => {
@@ -82,10 +85,17 @@ router.post('/refresh', async (req, res) => {
 
 // 注销
 router.post('/logout', async (req, res) => {
-  const { refreshToken } = req.body;
-  if (refreshToken) await tokenStore.remove(refreshToken);
-  res.json({ code: 0, msg: '已登出' });
+  try {
+    const { refreshToken } = req.body;
+    if (refreshToken) await tokenStore.remove(refreshToken);
+    res.json({ code: 0, msg: '已登出' });
+  } catch (err) {
+    // 关键日志
+    console.error('[Logout error]', err);
+    res.status(500).json({ code: 1, msg: '服务器错误', error: err.message });
+  }
 });
+
 
 // 获取当前用户信息（推荐只保留下面这种方式）
 router.get('/user/me', auth, async (req, res) => {
