@@ -19,6 +19,7 @@ async function createRoom(gametype = 1) {
   const gamenum = 10000 + groomid;
   const mapSize = 10;
   const blocked = [];
+  const { npcs, maps } = npc.initNpcs(3, mapSize, blocked);
   const gamevars = {
     players: {},
     map: [],
@@ -26,7 +27,8 @@ async function createRoom(gametype = 1) {
     turn: 0,
     mapSize,
     blocked,
-    npcs: npc.initNpcs(3, mapSize, blocked)
+    npcs,
+    mapNpcs: maps
   };
   const starttime = Math.floor(Date.now() / 1000) + config.readyMin * 60;
   const room = await Room.create({

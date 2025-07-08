@@ -1,10 +1,15 @@
 const npcData = require('../config/npcinfo.json');
 
-function initNpcs(count = 3, mapSize = 10, blocked = []) {
+function initNpcs(count = 3, mapSize = 10, blocked = [], mapCount = 1) {
   const npcs = [];
+  const maps = {};
+  for (let m = 0; m < mapCount; m++) {
+    maps[m] = [];
+  }
   for (let i = 0; i < count; i++) {
     const base = npcData[i % npcData.length];
     let pos;
+    let map = Math.floor(Math.random() * mapCount);
     // 保证出生点不在封锁区域
     do {
       pos = [
@@ -13,16 +18,19 @@ function initNpcs(count = 3, mapSize = 10, blocked = []) {
       ];
     } while (blocked.some(b => b[0] === pos[0] && b[1] === pos[1]));
 
-    npcs.push({
+    const npc = {
       id: i + 1,
       name: base.name,
       hp: base.hp,
       atk: base.atk,
       pos,
+      map,
       alive: true
-    });
+    };
+    npcs.push(npc);
+    maps[map].push(npc);
   }
-  return npcs;
+  return { npcs, maps };
 }
 
 function distance(a, b) {
@@ -83,30 +91,43 @@ function attack(npc, player, log) {
 }
 
 function act(game) {
-  if (!game.npcs) return;
+  if (!game.mapNpcs) return;
   const mapSize = game.mapSize || 10;
   const blocked = game.blocked || [];
   if (!game.log) game.log = [];
-  for (const npc of game.npcs) {
-    if (!npc.alive) continue;
-    const players = Object.values(game.players || {}).filter(p => p.hp > 0);
-    if (players.length === 0) break;
-    // 寻找最近的玩家
-    players.sort((a, b) => distance(npc.pos, a.pos) - distance(npc.pos, b.pos));
-    const target = players[0];
-    if (distance(npc.pos, target.pos) === 0) {
-      attack(npc, target, game.log);
-    } else {
-      moveNpc(npc, target.pos, mapSize, blocked);
-      game.log.push({ time: Date.now(), type: 'npcMove', npc: npc.id, pos: [...npc.pos] });
-      // 移动后若与玩家同格则进行攻击
+  for (const [mapId, list] of Object.entries(game.mapNpcs)) {
+    for (const npc of list.slice()) {
+      if (!npc.alive) continue;
+      const players = Object.values(game.players || {}).filter(p => p.hp > 0);
+      if (players.length === 0) break;
+      // 寻找最近的玩家
+      players.sort((a, b) => distance(npc.pos, a.pos) - distance(npc.pos, b.pos));
+      const target = players[0];
+      const oldMap = npc.map;
       if (distance(npc.pos, target.pos) === 0) {
         attack(npc, target, game.log);
+      } else {
+        moveNpc(npc, target.pos, mapSize, blocked);
+        game.log.push({ time: Date.now(), type: 'npcMove', npc: npc.id, pos: [...npc.pos] });
+        if (distance(npc.pos, target.pos) === 0) {
+          attack(npc, target, game.log);
+        }
+      }
+      if (npc.map !== oldMap) {
+        const idx = game.mapNpcs[oldMap].indexOf(npc);
+        if (idx >= 0) game.mapNpcs[oldMap].splice(idx, 1);
+        if (!game.mapNpcs[npc.map]) game.mapNpcs[npc.map] = [];
+        game.mapNpcs[npc.map].push(npc);
       }
     }
   }
   // 清理死亡的 NPC 和玩家
-  game.npcs = game.npcs.filter(n => n.alive);
+  for (const list of Object.values(game.mapNpcs)) {
+    for (let i = list.length - 1; i >= 0; i--) {
+      if (!list[i].alive) list.splice(i, 1);
+    }
+  }
+  game.npcs = Object.values(game.mapNpcs).flat();
   if (game.players) {
     for (const pid of Object.keys(game.players)) {
       const pl = game.players[pid];
