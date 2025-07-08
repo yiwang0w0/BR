@@ -60,9 +60,9 @@ function parseMapItems(file) {
 
 function main() {
   if (!fs.existsSync('data')) fs.mkdirSync('data');
-  const mixinfo = parseVariable('../DTS/include/modules/base/itemmix/itemmix/config/itemmix.config.php', 'mixinfo');
+  const mixinfo = parseVariable('../../DTS-SAMPLE/include/modules/base/itemmix/itemmix/config/itemmix.config.php', 'mixinfo');
   fs.writeFileSync('data/itemmix.json', JSON.stringify(mixinfo, null, 2));
-  const mapitems = parseMapItems('../DTS/include/modules/base/itemmain/config/mapitem.config.php');
+  const mapitems = parseMapItems('../../DTS-SAMPLE/include/modules/base/itemmain/config/mapitem.config.php');
   fs.writeFileSync('data/mapitems.json', JSON.stringify(mapitems, null, 2));
   console.log('Converted', mixinfo.length, 'recipes and', mapitems.length, 'map items.');
 }
