@@ -47,10 +47,10 @@
 - `GET /api/rooms`
 - 返回：房间数组（含状态、人数等）
 
-### 创建房间 （未实现）
+### 创建房间 （已实现）
 
 - `POST /api/rooms`
-- Body: `{ gametype, roomname, ... }`
+- Body: `{ gametype }`
 - 返回：房间信息
 
 ### 加入房间 （已实现）

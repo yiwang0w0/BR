@@ -11,6 +11,7 @@ const mapUtil = require('../utils/map');
 const { checkGameOverAndEnd } = require('../utils/gameover');
 const { emitRoomUpdate, emitBattleResult, sendRoomMessage } = require('../utils/socket'); // WebSocket 工具
 const { drawItem } = require('../utils/map');
+const { createRoom } = require('../utils/scheduler');
 
 router.use(auth);
 
@@ -22,7 +23,7 @@ router.get('/rooms', async (req, res) => {
     attributes: [
       'groomid', 'gamenum', 'gametype', 'gamestate', 'validnum', 'alivenum', 'deathnum', 'groomtype', 'groomstatus', 'starttime'
     ],
-    where: { gamestate: { [Op.ne]: 2 } },
+    where: { gamestate: { [Op.notIn]: [2, 99] } },
     order: [['groomid', 'ASC']]
   });
   res.json({ code: 0, msg: 'ok', data: rooms });
@@ -38,6 +39,17 @@ router.get('/rooms/next', async (req, res) => {
   });
   if (!room) return res.json({ code: 1, msg: '暂无房间' });
   res.json({ code: 0, msg: 'ok', data: room });
+});
+
+// 创建房间（供自动建房或无房间时使用）
+router.post('/rooms', async (req, res) => {
+  try {
+    const room = await createRoom(req.body.gametype || 1);
+    res.json({ code: 0, msg: '房间创建成功', data: room });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ code: 1, msg: '创建失败' });
+  }
 });
 
 /**
