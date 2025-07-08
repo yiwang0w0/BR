@@ -3,12 +3,18 @@ const router = express.Router();
 const { Op } = require('sequelize');
 const auth = require('../middlewares/auth');
 const Room = require('../models/Room');
+const User = require('../models/User');
 const npc = require('../utils/npc');
-const { endGame } = require('../utils/scheduler');
-const { emitRoomUpdate, emitBattleResult, getIO } = require('../utils/socket');
+const events = require('../utils/events');
+const logger = require('../utils/logger');
+const { checkGameOverAndEnd } = require('../utils/gameover');
+const { emitRoomUpdate, emitBattleResult, getIO } = require('../utils/socket'); // Socket.io工具，可选
 
 router.use(auth);
 
+/**
+ * 获取房间列表
+ */
 router.get('/rooms', async (req, res) => {
   const rooms = await Room.findAll({
     attributes: [
@@ -19,6 +25,9 @@ router.get('/rooms', async (req, res) => {
   res.json({ code: 0, msg: 'ok', data: rooms });
 });
 
+/**
+ * 获取最近的可加入房间
+ */
 router.get('/rooms/next', async (req, res) => {
   const room = await Room.findOne({
     where: { gamestate: { [Op.in]: [0, 1] } },
@@ -28,6 +37,9 @@ router.get('/rooms/next', async (req, res) => {
   res.json({ code: 0, msg: 'ok', data: room });
 });
 
+/**
+ * 加入房间
+ */
 router.post('/rooms/:id/join', async (req, res) => {
   const groomid = req.params.id;
   const room = await Room.findOne({ where: { groomid } });
@@ -37,29 +49,37 @@ router.post('/rooms/:id/join', async (req, res) => {
     return res.json({ code: 1, msg: '房间尚未开始' });
   }
 
-  const User = require('../models/User');
   const user = await User.findByPk(req.user.uid);
   if (!user) return res.status(404).json({ code: 1, msg: '用户不存在' });
-  if (user.roomid > 0) {
-    return res.json({ code: 1, msg: '已在房间中' });
-  }
-  await user.update({ roomid: groomid });
+  if (user.roomid > 0) return res.json({ code: 1, msg: '已在房间中' });
 
+  await user.update({ roomid: groomid });
+  await logger.logSave(user.uid, 'system', `加入房间${groomid}`);
+
+  // 初始化玩家数据
   let game = {};
   try { game = JSON.parse(room.gamevars || '{}'); } catch (e) {}
   if (!game.players) game.players = {};
   if (!game.players[user.uid]) {
-    game.players[user.uid] = { hp: 20, atk: 5, pos: [0, 0] };
+    const team = req.body.team || 1;
+    game.players[user.uid] = {
+      hp: 20, atk: 5, def: 3, pos: [0, 0], team, username: user.username,
+      inventory: [], status: {}, kills: 0,
+    };
   }
   await room.update({ gamevars: JSON.stringify(game) });
 
+  // Socket.io: 房间内广播玩家加入
   emitRoomUpdate(groomid, { game });
-  const io = getIO();
+  const io = getIO && getIO();
   if (io) io.to(`room_${groomid}`).emit('message', { type: 'player_join', payload: { uid: user.uid, username: user.username } });
 
   res.json({ code: 0, msg: '加入房间成功' });
 });
 
+/**
+ * 获取房间完整状态
+ */
 router.get('/game/:groomid', async (req, res) => {
   const { groomid } = req.params;
   const room = await Room.findOne({ where: { groomid } });
@@ -73,74 +93,88 @@ router.get('/game/:groomid', async (req, res) => {
   res.json({ code: 0, msg: 'ok', data });
 });
 
-router.get('/game/:groomid/npcs', async (req, res) => {
-  const { groomid } = req.params;
-  const room = await Room.findOne({ where: { groomid } });
-  if (!room) return res.json({ code: 1, msg: '房间不存在' });
-  let game = {};
-  try { game = JSON.parse(room.gamevars || '{}'); } catch (e) {}
-  res.json({ code: 0, msg: 'ok', data: game.npcs || [] });
-});
-
+/**
+ * 游戏主操作
+ */
 router.post('/game/:groomid/action', async (req, res) => {
   const { groomid } = req.params;
   const { type, params } = req.body;
+  const uid = req.user.uid;
   const room = await Room.findOne({ where: { groomid } });
   if (!room) return res.json({ code: 1, msg: '房间不存在' });
 
   let game = {};
   try { game = JSON.parse(room.gamevars || '{}'); } catch (e) {}
+  if (!game.players) game.players = {};
+  if (!game.log) game.log = [];
 
+  // 玩家主动行动阶段
   if (type === 'move') {
-    const uid = req.user.uid;
-    if (!game.players) game.players = {};
-    if (!game.players[uid]) game.players[uid] = {};
-    game.players[uid].pos = [params.x, params.y];
-    if (!game.log) game.log = [];
-    game.log.push({ time: Date.now(), uid, type: 'move', pos: [params.x, params.y] });
-    npc.act(game);
-    await room.update({ gamevars: JSON.stringify(game) });
-    emitRoomUpdate(groomid, { game });
-    let gameover = null;
-    if (game.players[uid].hp !== undefined && game.players[uid].hp <= 0) gameover = 'lose';
-    if (game.npcs && game.npcs.length === 0) gameover = 'win';
-    if (gameover) {
-      await endGame(room, gameover, req.user.username);
-      emitBattleResult(groomid, { result: gameover });
-    }
-    return res.json({ code: 0, msg: 'ok', data: { game, gameover } });
+    const player = game.players[uid];
+    if (!player) return res.json({ code: 1, msg: '玩家不存在' });
+    player.pos = [params.x, params.y];
+
+    // 触发地图事件等
+    const moveEvents = events.onPlayerMove(player, game, room) || [];
+    game.log.push(...moveEvents);
+
+    events.resolveStatus(player, game, room, game.log);
+
+    game.log.push({ time: Date.now(), uid, type: 'move', pos: player.pos, msg: `${player.username}移动到(${player.pos[0]},${player.pos[1]})` });
+    await logger.logSave(uid, 'move', `移动到(${player.pos[0]},${player.pos[1]})`);
   }
 
   if (type === 'attack') {
-    const uid = req.user.uid;
-    if (!game.players || !game.players[uid]) {
-      return res.json({ code: 1, msg: '玩家不存在' });
-    }
     const player = game.players[uid];
-    const target = (game.npcs || []).find(n => n.id === params.npcId) ||
-      (game.npcs || []).find(n => n.pos[0] === player.pos[0] && n.pos[1] === player.pos[1]);
-    if (!target) return res.json({ code: 1, msg: '没有目标' });
-    target.hp -= player.atk;
-    if (!game.log) game.log = [];
-    game.log.push({ time: Date.now(), uid, type: 'attack', npc: target.id });
-    if (target.hp <= 0) {
-      game.npcs = game.npcs.filter(n => n.id !== target.id);
+    if (!player) return res.json({ code: 1, msg: '玩家不存在' });
+    const targetId = params.npcId || params.playerId;
+    let attackEvents = [];
+    if (targetId && game.npcs && game.npcs.length > 0) {
+      const npcTarget = game.npcs.find(n => n.id === targetId);
+      if (!npcTarget) return res.json({ code: 1, msg: '目标不存在' });
+      attackEvents = events.onPlayerAttackNpc(player, npcTarget, game, room) || [];
+    } else if (params.playerId && game.players[params.playerId]) {
+      const pTarget = game.players[params.playerId];
+      attackEvents = events.onPlayerAttackPlayer(player, pTarget, game, room) || [];
     }
-    npc.act(game);
-    await room.update({ gamevars: JSON.stringify(game) });
+    game.log.push(...attackEvents);
 
-    let gameover = null;
-    if (player.hp <= 0) gameover = 'lose';
-    if (!game.npcs.length) gameover = 'win';
-
-    if (gameover) {
-      await endGame(room, gameover, req.user.username);
-      emitBattleResult(groomid, { result: gameover });
-    }
-    return res.json({ code: 0, msg: 'ok', data: { game, gameover } });
+    events.resolveStatus(player, game, room, game.log);
   }
 
-  res.json({ code: 1, msg: '未知操作' });
+  // 可拓展 use_item, rest, 合成等...
+
+  // NPC回合
+  let npcLogs = [];
+  if (game.npcs && game.npcs.length > 0) {
+    for (const npcObj of game.npcs) {
+      const logs = npc.act(npcObj, game, room) || [];
+      npcLogs.push(...logs);
+    }
+  }
+  game.log.push(...npcLogs);
+
+  // 判胜负
+  const endLog = [];
+  const result = checkGameOverAndEnd(game, room, endLog);
+  if (endLog.length) game.log.push(...endLog);
+
+  await room.update({ gamevars: JSON.stringify(game) });
+
+  // Socket.io 推送游戏状态变化和战报
+  emitRoomUpdate(groomid, { game });
+  if (result && emitBattleResult) emitBattleResult(groomid, { result });
+
+  // 返回API
+  res.json({
+    code: 0,
+    msg: 'ok',
+    data: {
+      game,
+      logs: game.log.slice(-30),
+      gameover: result ? result : null
+    }
+  });
 });
 
 module.exports = router;
