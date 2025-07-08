@@ -8,12 +8,16 @@ async function createRoom() {
   const max = await Room.max('groomid');
   const groomid = (max || 0) + 1;
   const gamenum = 10000 + groomid;
+  const mapSize = 10;
+  const blocked = [];
   const gamevars = {
     players: {},
     map: [],
     log: [],
     turn: 0,
-    npcs: npc.initNpcs()
+    mapSize,
+    blocked,
+    npcs: npc.initNpcs(3, mapSize, blocked)
   };
   const starttime = Math.floor(Date.now() / 1000) + config.readyMin * 60;
   const room = await Room.create({
