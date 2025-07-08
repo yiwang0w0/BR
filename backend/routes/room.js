@@ -9,6 +9,7 @@ const events = require('../utils/events');
 const logger = require('../utils/logger');
 const { checkGameOverAndEnd } = require('../utils/gameover');
 const { emitRoomUpdate, emitBattleResult, sendRoomMessage } = require('../utils/socket'); // WebSocket 工具
+const { drawItem } = require('../utils/map');
 
 router.use(auth);
 
@@ -131,7 +132,15 @@ router.post('/game/:groomid/action', async (req, res) => {
   if (type === 'search') {
     const player = game.players[uid];
     if (!player) return res.json({ code: 1, msg: '玩家不存在' });
-    game.log.push({ time: Date.now(), uid, type: 'search', msg: `${player.username}搜索了周围` });
+    const mapId = player.pos[0] * (game.mapSize || 10) + player.pos[1];
+    const item = drawItem(game.map, mapId);
+    if (item) {
+      if (!player.inventory) player.inventory = [];
+      player.inventory.push(item);
+      game.log.push({ time: Date.now(), uid, type: 'search', msg: `${player.username}找到${item.name}` });
+    } else {
+      game.log.push({ time: Date.now(), uid, type: 'search', msg: `${player.username}什么也没有找到` });
+    }
   }
 
   if (type === 'attack') {

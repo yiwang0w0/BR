@@ -1,4 +1,5 @@
 const npcData = require('../config/npcinfo.json');
+const { drawItem } = require('./map');
 
 function initNpcs(count = 3, mapSize = 10, blocked = []) {
   const npcs = [];
@@ -103,6 +104,15 @@ function act(game) {
       if (distance(npc.pos, target.pos) === 0) {
         attack(npc, target, game.log);
       }
+    }
+
+    // NPC 搜索当前地点道具
+    const mapId = npc.pos[0] * mapSize + npc.pos[1];
+    const got = drawItem(game.map, mapId);
+    if (got) {
+      if (!npc.inventory) npc.inventory = [];
+      npc.inventory.push(got);
+      game.log.push({ time: Date.now(), type: 'npcGet', npc: npc.id, item: got.name });
     }
   }
   // 清理死亡的 NPC 和玩家
