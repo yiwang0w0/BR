@@ -16,24 +16,31 @@
 
 ## 目录结构
 
+更完整的项目目录示例如下，便于快速定位代码：
+
 ```bash
 .
-├── backend/              # Node.js 后端
-│   ├── models/           # Sequelize ORM模型
-│   ├── routes/           # API 路由
-│   ├── controllers/      # 业务逻辑
-│   ├── middlewares/      # 中间件
-│   ├── utils/            # 工具
-│   ├── app.js            # 入口
-│   └── database.sql      # 数据库建表脚本
-├── frontend/             # Vue3 前端
+├── backend/                  # Node.js 后端
+│   ├── app.js                # 入口文件
+│   ├── config/               # Sequelize 配置等
+│   ├── models/               # 数据模型定义
+│   ├── routes/               # API 路由
+│   ├── middlewares/          # 通用中间件
+│   ├── utils/                # 工具函数
+│   ├── scripts/              # 辅助脚本
+│   └── test/                 # Mocha 单元测试
+├── frontend/                 # Vue3 前端
 │   ├── src/
+│   │   ├── assets/           # 静态资源
+│   │   ├── views/            # 页面组件
+│   │   ├── router/           # 路由配置
+│   │   ├── stores/           # Pinia 状态管理
+│   │   └── utils/            # 前端工具
 │   ├── public/
-│   ├── vite.config.js
-│   └── ...
+│   └── vite.config.js
 ├── README.md
 ├── AGENTS.md
-└── database.sql          # （冗余）快速入口
+└── database.sql              # （冗余）快速入口
 ```
 
 ---
@@ -69,6 +76,20 @@ npm run dev
 ```
 
 前端默认运行于 `http://localhost:5173`
+
+---
+
+## 端口提示
+
+已实现端口：
+
+- **3000** - 后端 REST API 以及 WebSocket 服务。
+- **5173** - Vite 开发服务器（前端）。
+- **3306** - MySQL 数据库（需自行安装）。
+
+预留端口（未实现）：
+
+- **8080** - 后续计划的管理后台。
 
 ---
 

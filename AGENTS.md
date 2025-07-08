@@ -4,21 +4,35 @@
 
 ---
 
+## 端口提示
+
+已实现端口：
+
+- **3000** - REST API 与 WebSocket 服务
+- **5173** - 前端 Vite 开发服务器
+- **3306** - MySQL 数据库
+
+预留端口（未实现）：
+
+- **8080** - 管理后台计划使用端口
+
+---
+
 ## 用户/认证
 
-### 注册
+### 注册 （已实现）
 
 - `POST /api/register`
 - Body: `{ username, password }`
 - 返回：`{ code, msg, data }`
 
-### 登录
+### 登录 （已实现）
 
 - `POST /api/login`
 - Body: `{ username, password }`
 - 返回：`{ code, msg, token }`
 
-### 获取当前用户信息
+### 获取当前用户信息 （已实现）
 
 - `GET /api/user/me`
 - Header: `Authorization: Bearer <token>`
@@ -28,18 +42,18 @@
 
 ## 游戏大厅/房间
 
-### 获取房间列表
+### 获取房间列表 （已实现）
 
 - `GET /api/rooms`
 - 返回：房间数组（含状态、人数等）
 
-### 创建房间
+### 创建房间 （未实现）
 
 - `POST /api/rooms`
 - Body: `{ gametype, roomname, ... }`
 - 返回：房间信息
 
-### 加入房间
+### 加入房间 （已实现）
 
 - `POST /api/rooms/:id/join`
 - Header: 认证
@@ -49,12 +63,12 @@
 
 ## 游戏主流程
 
-### 获取游戏房间详情
+### 获取游戏房间详情 （已实现）
 
 - `GET /api/game/:groomid`
 - 返回：当前游戏所有状态（参考 bra_game 表字段）
 
-### 游戏操作（举例）
+### 游戏操作（举例，已实现）
 
 - `POST /api/game/:groomid/action`
 - Body: `{ type: 'move' | 'attack' | ... , params: { ... } }`
@@ -64,13 +78,13 @@
 
 ## 消息/邮件系统
 
-### 发送消息
+### 发送消息 （已实现）
 
 - `POST /api/messages`
 - Body: `{ receiver, title, content }`
 - 返回：发送结果
 
-### 获取消息
+### 获取消息 （已实现）
 
 - `GET /api/messages/inbox`
 - 返回：收件箱
@@ -82,12 +96,12 @@
 
 ## 排行榜/历史对局
 
-### 查询历史对局
+### 查询历史对局 （未实现）
 
 - `GET /api/history`
 - 可加参数过滤，如按用户、时间等
 
-### 查询某局详情
+### 查询某局详情 （未实现）
 
 - `GET /api/history/:gid`
 
@@ -110,7 +124,7 @@
 
 ---
 
-## WebSocket 约定（如需）
+## WebSocket 约定（已实现）
 
 - 地址: `ws://localhost:3000/ws`
 - 连接后通过 `{ type, payload }` 结构传递事件，如：
