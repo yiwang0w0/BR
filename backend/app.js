@@ -1,13 +1,12 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const sequelize = require('./models/index'); // 数据库连接
-const userRouter = require('./routes/user'); // 用户相关路由
+const sequelize = require('./models/index');
+const userRouter = require('./routes/user');
 const roomRouter = require('./routes/room');
 const messageRouter = require('./routes/message');
 const adminRouter = require('./routes/admin');
 const { scheduleRooms } = require('./utils/scheduler');
-
 
 const app = express();
 
@@ -17,6 +16,7 @@ app.use('/api', userRouter);
 app.use('/api', roomRouter);
 app.use('/api', messageRouter);
 app.use('/api', adminRouter);
+
 // 数据库连接测试
 sequelize.authenticate()
   .then(() => console.log('数据库连接成功！'))
@@ -24,12 +24,7 @@ sequelize.authenticate()
 
 scheduleRooms();
 
-// 健康检查
 app.get('/api/ping', (req, res) => res.send('pong'));
-
-// TODO: 以后可以继续挂载其他路由，比如：
-// const roomRouter = require('./routes/room');
-// app.use('/api', roomRouter);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

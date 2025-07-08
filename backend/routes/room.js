@@ -4,11 +4,10 @@ const { Op } = require('sequelize');
 const auth = require('../middlewares/auth');
 const Room = require('../models/Room');
 const npc = require('../utils/npc');
+const { endGame } = require('../utils/scheduler');
 
-// 全局 JWT 验证中间件
 router.use(auth);
 
-// 获取所有房间列表
 router.get('/rooms', async (req, res) => {
   const rooms = await Room.findAll({
     attributes: [
@@ -16,10 +15,9 @@ router.get('/rooms', async (req, res) => {
     ],
     order: [['groomid', 'ASC']]
   });
-  res.json({ code: 0, msg: "ok", data: rooms });
+  res.json({ code: 0, msg: 'ok', data: rooms });
 });
 
-// 下一局信息
 router.get('/rooms/next', async (req, res) => {
   const room = await Room.findOne({
     where: { gamestate: { [Op.in]: [0, 1] } },
@@ -29,7 +27,6 @@ router.get('/rooms/next', async (req, res) => {
   res.json({ code: 0, msg: 'ok', data: room });
 });
 
-// 加入房间
 router.post('/rooms/:id/join', async (req, res) => {
   const groomid = req.params.id;
   const room = await Room.findOne({ where: { groomid } });
@@ -47,7 +44,6 @@ router.post('/rooms/:id/join', async (req, res) => {
   }
   await user.update({ roomid: groomid });
 
-  // 初始化玩家数据
   let game = {};
   try { game = JSON.parse(room.gamevars || '{}'); } catch (e) {}
   if (!game.players) game.players = {};
@@ -59,7 +55,6 @@ router.post('/rooms/:id/join', async (req, res) => {
   res.json({ code: 0, msg: '加入房间成功' });
 });
 
-// 获取房间详情
 router.get('/game/:groomid', async (req, res) => {
   const { groomid } = req.params;
   const room = await Room.findOne({ where: { groomid } });
@@ -73,7 +68,6 @@ router.get('/game/:groomid', async (req, res) => {
   res.json({ code: 0, msg: 'ok', data });
 });
 
-// 获取房间 NPC 列表
 router.get('/game/:groomid/npcs', async (req, res) => {
   const { groomid } = req.params;
   const room = await Room.findOne({ where: { groomid } });
@@ -83,7 +77,6 @@ router.get('/game/:groomid/npcs', async (req, res) => {
   res.json({ code: 0, msg: 'ok', data: game.npcs || [] });
 });
 
-// 游戏操作示例
 router.post('/game/:groomid/action', async (req, res) => {
   const { groomid } = req.params;
   const { type, params } = req.body;
@@ -105,6 +98,7 @@ router.post('/game/:groomid/action', async (req, res) => {
     let gameover = null;
     if (game.players[uid].hp !== undefined && game.players[uid].hp <= 0) gameover = 'lose';
     if (game.npcs && game.npcs.length === 0) gameover = 'win';
+    if (gameover) await endGame(room, gameover, req.user.username);
     return res.json({ code: 0, msg: 'ok', data: { game, gameover } });
   }
 
@@ -130,6 +124,7 @@ router.post('/game/:groomid/action', async (req, res) => {
     if (player.hp <= 0) gameover = 'lose';
     if (!game.npcs.length) gameover = 'win';
 
+    if (gameover) await endGame(room, gameover, req.user.username);
     return res.json({ code: 0, msg: 'ok', data: { game, gameover } });
   }
 
