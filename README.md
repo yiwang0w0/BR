@@ -121,12 +121,12 @@ npm run dev
 以下列出了项目中常见的函数及其作用，方便快速了解代码：
 
 ### 后端工具函数
-- `initNpcs(count, mapSize)`：生成指定数量的 NPC【F:backend/utils/npc.js†L3-L18】
-- `act(game)`：驱动 NPC 行动并处理与玩家的交互【F:backend/utils/npc.js†L21-L45】
-- `createRoom()`：创建新的游戏房间【F:backend/utils/scheduler.js†L7-L35】
-- `startRoom(groomid)`：房间开始进入游戏阶段【F:backend/utils/scheduler.js†L37-L42】
-- `endGame(room, result, winner)`：结束游戏并保存历史【F:backend/utils/scheduler.js†L44-L64】
-- `scheduleRooms()`：按照配置定时创建房间【F:backend/utils/scheduler.js†L66-L81】
+- `initNpcs(count, mapSize)`：生成指定数量的 NPC【F:backend/utils/npc.js†L3-L26】
+- `act(game)`：驱动 NPC 行动并处理与玩家的交互【F:backend/utils/npc.js†L85-L119】
+- `createRoom()`：创建新的游戏房间【F:backend/utils/scheduler.js†L7-L39】
+- `startRoom(groomid)`：房间开始进入游戏阶段【F:backend/utils/scheduler.js†L41-L46】
+- `endGame(room, result, winner)`：结束游戏并保存历史【F:backend/utils/scheduler.js†L48-L68】
+- `scheduleRooms()`：按照配置定时创建房间【F:backend/utils/scheduler.js†L70-L84】
 - `add(token)`、`has(token)`、`remove(token)`：刷新令牌的增删查【F:backend/utils/tokenStore.js†L11-L33】
 
 ### 中间件
