@@ -5,8 +5,8 @@ const History = require('../models/History');
 const config = require('../config/gameConfig');
 const npc = require('./npc');
 const logger = require('./logger');
-// 可选：引入 socket.io 广播能力（如不用socket.io可以注释下面这一行）
-const { emitBattleResult } = require('./socket'); 
+// 可选：引入 WebSocket 广播能力
+const { emitBattleResult } = require('./socket');
 
 const TEAM_MODES = [11, 12, 13, 14];
 
@@ -131,7 +131,7 @@ async function endGame(room, result, winner, game = null) {
 
   await logger.addNews('gameover', winner || '', result);
 
-  // --- socket.io 战报推送（如不用socket.io可注释）---
+  // --- WebSocket 战报推送 ---
   if (typeof emitBattleResult === 'function') {
     emitBattleResult(room.groomid, { result, winner });
   }

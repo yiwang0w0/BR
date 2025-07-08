@@ -38,7 +38,7 @@ const PORT = process.env.PORT || 3000;
 
 // 启动 HTTP + WebSocket
 const server = http.createServer(app);     // 必须用http.createServer(app)
-wsServer.init(server);                     // 初始化 WebSocket 服务（如用 socket.io 或 ws）
+wsServer.init(server);                     // 初始化 WebSocket 服务
 
 server.listen(PORT, () => {
   console.log('API server listening on port', PORT);

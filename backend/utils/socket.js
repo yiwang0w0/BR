@@ -1,46 +1,77 @@
-const { Server } = require('socket.io');
+const { Server } = require('ws');
 
-let io;
+let wss;
+const rooms = new Map();
 
 function init(server) {
-  io = new Server(server, {
-    path: '/ws',
-    cors: { origin: '*' }
-  });
-  io.on('connection', socket => {
-    socket.on('message', msg => {
-      if (!msg || !msg.type) return;
+  wss = new Server({ server, path: '/ws' });
+  wss.on('connection', ws => {
+    ws.rooms = new Set();
+    ws.on('message', data => {
+      let msg;
+      try { msg = JSON.parse(data); } catch (e) { return; }
       const { type, payload } = msg;
       if (type === 'join_room' && payload && payload.groomid) {
-        socket.join(`room_${payload.groomid}`);
-        io.to(`room_${payload.groomid}`).emit('message', {
+        joinRoom(ws, payload.groomid);
+        sendRoomMessage(payload.groomid, {
           type: 'player_join',
           payload: { uid: payload.uid, username: payload.username }
         });
       } else if (type === 'leave_room' && payload && payload.groomid) {
-        socket.leave(`room_${payload.groomid}`);
-        io.to(`room_${payload.groomid}`).emit('message', {
+        leaveRoom(ws, payload.groomid);
+        sendRoomMessage(payload.groomid, {
           type: 'player_leave',
           payload: { uid: payload.uid, username: payload.username }
         });
       } else if (type === 'chat_message' && payload && payload.groomid && payload.text) {
-        io.to(`room_${payload.groomid}`).emit('message', {
+        sendRoomMessage(payload.groomid, {
           type: 'chat_message',
           payload: { user: payload.user, text: payload.text }
         });
       }
     });
+    ws.on('close', () => {
+      for (const rid of ws.rooms) {
+        const set = rooms.get(rid);
+        if (set) set.delete(ws);
+      }
+    });
   });
 }
 
-function getIO() { return io; }
-
-function emitRoomUpdate(groomid, data) {
-  if (io) io.to(`room_${groomid}`).emit('message', { type: 'room_update', payload: data });
+function joinRoom(ws, rid) {
+  let set = rooms.get(rid);
+  if (!set) {
+    set = new Set();
+    rooms.set(rid, set);
+  }
+  set.add(ws);
+  ws.rooms.add(rid);
 }
 
-function emitBattleResult(groomid, data) {
-  if (io) io.to(`room_${groomid}`).emit('message', { type: 'battle_result', payload: data });
+function leaveRoom(ws, rid) {
+  const set = rooms.get(rid);
+  if (set) set.delete(ws);
+  ws.rooms.delete(rid);
 }
 
-module.exports = { init, getIO, emitRoomUpdate, emitBattleResult };
+function sendRoomMessage(rid, data) {
+  const set = rooms.get(rid);
+  if (!set) return;
+  const msg = JSON.stringify(data);
+  for (const c of set) {
+    if (c.readyState === 1) c.send(msg);
+  }
+}
+
+function emitRoomUpdate(rid, data) {
+  sendRoomMessage(rid, { type: 'room_update', payload: data });
+}
+
+function emitBattleResult(rid, data) {
+  sendRoomMessage(rid, { type: 'battle_result', payload: data });
+}
+
+function getIO() { return wss; }
+
+module.exports = { init, getIO, emitRoomUpdate, emitBattleResult, sendRoomMessage };
