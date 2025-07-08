@@ -5,6 +5,7 @@ const auth = require('../middlewares/auth');
 const Room = require('../models/Room');
 const npc = require('../utils/npc');
 const { endGame } = require('../utils/scheduler');
+const logger = require('../utils/logger');
 
 router.use(auth);
 
@@ -43,6 +44,8 @@ router.post('/rooms/:id/join', async (req, res) => {
     return res.json({ code: 1, msg: '已在房间中' });
   }
   await user.update({ roomid: groomid });
+  await logger.logSave(user.uid, 's', `加入房间${groomid}`);
+  await logger.addNews('join', user.username, groomid.toString());
 
   let game = {};
   try { game = JSON.parse(room.gamevars || '{}'); } catch (e) {}
@@ -93,6 +96,7 @@ router.post('/game/:groomid/action', async (req, res) => {
     game.players[uid].pos = [params.x, params.y];
     if (!game.log) game.log = [];
     game.log.push({ time: Date.now(), uid, type: 'move', pos: [params.x, params.y] });
+    await logger.logSave(uid, 'b', `移动到(${params.x},${params.y})`);
     npc.act(game);
     await room.update({ gamevars: JSON.stringify(game) });
     let gameover = null;
@@ -114,6 +118,7 @@ router.post('/game/:groomid/action', async (req, res) => {
     target.hp -= player.atk;
     if (!game.log) game.log = [];
     game.log.push({ time: Date.now(), uid, type: 'attack', npc: target.id });
+    await logger.logSave(uid, 'b', `攻击NPC${target.id}`);
     if (target.hp <= 0) {
       game.npcs = game.npcs.filter(n => n.id !== target.id);
     }

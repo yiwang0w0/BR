@@ -3,6 +3,7 @@ const Room = require('../models/Room');
 const History = require('../models/History');
 const config = require('../config/gameConfig');
 const npc = require('./npc');
+const logger = require('./logger');
 
 async function createRoom() {
   const max = await Room.max('groomid');
@@ -60,6 +61,7 @@ async function endGame(room, result, winner) {
     validlist: '',
     hnews: JSON.stringify(room.gamevars || '')
   });
+  await logger.addNews('gameover', winner || '', result);
   setTimeout(() => createRoom(), 60 * 1000);
 }
 
