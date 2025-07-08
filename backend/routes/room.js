@@ -154,15 +154,10 @@ router.post('/game/:groomid/action', async (req, res) => {
 
   // 可拓展 use_item, rest, 合成等...
 
-  // NPC回合
-  let npcLogs = [];
+  // NPC回合，npc.act 会一次性处理全部 NPC 行为并写入日志
   if (game.npcs && game.npcs.length > 0) {
-    for (const npcObj of game.npcs) {
-      const logs = npc.act(npcObj, game, room) || [];
-      npcLogs.push(...logs);
-    }
+    npc.act(game);
   }
-  game.log.push(...npcLogs);
 
   // 判胜负
   const endLog = [];
