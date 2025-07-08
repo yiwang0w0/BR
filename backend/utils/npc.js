@@ -121,15 +121,15 @@ function act(game) {
         if (!game.mapNpcs[npc.map]) game.mapNpcs[npc.map] = [];
         game.mapNpcs[npc.map].push(npc);
       }
-    }
 
-    // NPC 搜索当前地点道具
-    const mapId = npc.pos[0] * mapSize + npc.pos[1];
-    const got = drawItem(game.map, mapId);
-    if (got) {
-      if (!npc.inventory) npc.inventory = [];
-      npc.inventory.push(got);
-      game.log.push({ time: Date.now(), type: 'npcGet', npc: npc.id, item: got.name });
+      // NPC 搜索当前地点道具
+      const mapId = npc.pos[0] * mapSize + npc.pos[1];
+      const got = drawItem(game.map, mapId);
+      if (got) {
+        if (!npc.inventory) npc.inventory = [];
+        npc.inventory.push(got);
+        game.log.push({ time: Date.now(), type: 'npcGet', npc: npc.id, item: got.name });
+      }
     }
   }
   // 清理死亡的 NPC 和玩家
