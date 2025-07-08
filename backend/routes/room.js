@@ -32,7 +32,7 @@ router.post('/rooms/:id/join', async (req, res) => {
   const room = await Room.findOne({ where: { groomid } });
   if (!room) return res.json({ code: 1, msg: '房间不存在' });
   const now = Math.floor(Date.now() / 1000);
-  if (now < room.starttime) {
+  if (room.gamestate === 0 && now < room.starttime) {
     return res.json({ code: 1, msg: '房间尚未开始' });
   }
 
