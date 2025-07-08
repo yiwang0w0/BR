@@ -102,6 +102,11 @@ router.post('/game/:groomid/action', async (req, res) => {
   const room = await Room.findOne({ where: { groomid } });
   if (!room) return res.json({ code: 1, msg: '房间不存在' });
 
+  const supported = ['move', 'attack', 'search'];
+  if (!supported.includes(type)) {
+    return res.json({ code: 1, msg: '该操作暂未实现' });
+  }
+
   let game = {};
   try { game = JSON.parse(room.gamevars || '{}'); } catch (e) {}
   if (!game.players) game.players = {};
@@ -121,6 +126,12 @@ router.post('/game/:groomid/action', async (req, res) => {
 
     game.log.push({ time: Date.now(), uid, type: 'move', pos: player.pos, msg: `${player.username}移动到(${player.pos[0]},${player.pos[1]})` });
     await logger.logSave(uid, 'move', `移动到(${player.pos[0]},${player.pos[1]})`);
+  }
+
+  if (type === 'search') {
+    const player = game.players[uid];
+    if (!player) return res.json({ code: 1, msg: '玩家不存在' });
+    game.log.push({ time: Date.now(), uid, type: 'search', msg: `${player.username}搜索了周围` });
   }
 
   if (type === 'attack') {

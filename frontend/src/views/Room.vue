@@ -47,6 +47,7 @@
           <el-button size="small" @click="move(1, 0)">→</el-button>
           <el-button size="small" @click="move(0, 1)">↓</el-button>
           <el-button size="small" type="danger" @click="attack">攻击</el-button>
+          <el-button size="small" type="primary" @click="search">搜索</el-button>
         </div>
       </div>
 
@@ -93,7 +94,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import ws from '../utils/ws'
 import { useRoute, useRouter } from 'vue-router'
@@ -101,7 +102,7 @@ import http from '../utils/http'
 
 const route = useRoute()
 const router = useRouter()
-const roomId = route.params.id
+const roomId = computed(() => route.params.id)
 
 const rooms = ref([])
 const room = ref(null)
@@ -113,17 +114,19 @@ const chatText = ref('')
 const chatLog = ref([])
 const chatVisible = ref(true)
 const uid = ref(null)
+const pendingAction = ref(null)
+const pendingParams = ref({})
 const auth = useAuthStore()
 
-onMounted(async () => {
+async function loadData() {
   ws.connect(auth.token)
-  if (!roomId) {
+  if (!roomId.value) {
     const res = await http.get('/rooms')
     if (res.data.code === 0) {
       rooms.value = res.data.data
     }
   } else {
-    const res = await http.get(`/game/${roomId}`)
+    const res = await http.get(`/game/${roomId.value}`)
     if (res.data.code === 0) {
       room.value = res.data.data
       if (res.data.data.inventory) inventory.value = res.data.data.inventory
@@ -137,14 +140,21 @@ onMounted(async () => {
           }
         }
       }
-      ws.joinRoom(roomId, { uid: uid.value })
+      ws.joinRoom(roomId.value, { uid: uid.value })
       ws.onMessage(handleMessage)
     }
   }
+}
+
+onMounted(loadData)
+watch(roomId, () => {
+  room.value = null
+  rooms.value = []
+  loadData()
 })
 
 onUnmounted(() => {
-  if (roomId) ws.leaveRoom(roomId, { uid: uid.value })
+  if (roomId.value) ws.leaveRoom(roomId.value, { uid: uid.value })
 })
 
 function countdown(ts) {
@@ -159,12 +169,12 @@ function enterRoom(id) {
   router.push(`/room/${id}`)
 }
 
-async function move(dx, dy) {
+function move(dx, dy) {
   const [x, y] = pos.value
   const nx = x + dx
   const ny = y + dy
-  await sendAction('move', { x: nx, y: ny })
-  pos.value = [nx, ny]
+  pendingAction.value = 'move'
+  pendingParams.value = { x: nx, y: ny }
 }
 
 async function useItem(item) {
@@ -180,11 +190,24 @@ function sleep() { sendAction('sleep') }
 function heal() { sendAction('heal') }
 function openShop() { sendAction('shop') }
 function showSkills() { sendAction('skills') }
-function attack() { sendAction('attack') }
+function attack() {
+  pendingAction.value = 'attack'
+  pendingParams.value = {}
+}
+
+async function search() {
+  if (!pendingAction.value) {
+    log.value.push('请选择行动后再搜索')
+    return
+  }
+  await sendAction(pendingAction.value, pendingParams.value)
+  pendingAction.value = null
+  pendingParams.value = {}
+}
 
 async function sendChat() {
   if (!chatText.value) return
-  ws.sendChat(roomId, chatText.value)
+  ws.sendChat(roomId.value, chatText.value)
   chatLog.value.push(chatText.value)
   chatText.value = ''
 }
@@ -193,7 +216,7 @@ function toggleChat() { chatVisible.value = !chatVisible.value }
 
 async function sendAction(type, params = {}) {
   try {
-    const res = await http.post(`/game/${roomId}/action`, { type, params })
+    const res = await http.post(`/game/${roomId.value}/action`, { type, params })
     if (res.data.code !== 0) {
       log.value.push(`操作失败: ${res.data.msg}`)
     } else {
