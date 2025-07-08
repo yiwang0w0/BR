@@ -64,6 +64,14 @@ function sendRoomMessage(rid, data) {
   }
 }
 
+function broadcast(data) {
+  if (!wss) return;
+  const msg = JSON.stringify(data);
+  for (const c of wss.clients) {
+    if (c.readyState === 1) c.send(msg);
+  }
+}
+
 function emitRoomUpdate(rid, data) {
   sendRoomMessage(rid, { type: 'room_update', payload: data });
 }
@@ -74,4 +82,11 @@ function emitBattleResult(rid, data) {
 
 function getIO() { return wss; }
 
-module.exports = { init, getIO, emitRoomUpdate, emitBattleResult, sendRoomMessage };
+module.exports = {
+  init,
+  getIO,
+  emitRoomUpdate,
+  emitBattleResult,
+  sendRoomMessage,
+  broadcast
+};

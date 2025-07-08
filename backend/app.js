@@ -9,7 +9,7 @@ const messageRouter = require('./routes/message');
 const adminRouter = require('./routes/admin');
 const logRouter = require('./routes/log');
 const { scheduleRooms } = require('./utils/scheduler');
-const wsServer = require('./utils/wsServer'); // 推荐统一命名
+const wsServer = require('./utils/socket');
 
 const app = express();
 
