@@ -112,7 +112,7 @@ npm run dev
 
 ## 开发建议
 
-- 配置 `.env` 文件（见后端根目录），注意数据库连接。
+- 本仓库不包含 `.env`，请在 `backend` 目录中复制 `.env.example` 为 `.env` 并根据需要配置数据库连接。
 - 推荐配合 PM2 生产部署，支持 Docker 一键启动（后续补充 docker-compose.yaml）。
 - 前端对接后端 API，接口文档见 [AGENTS.md](AGENTS.md)。
 
