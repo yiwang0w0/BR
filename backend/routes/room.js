@@ -59,6 +59,9 @@ router.post('/rooms/:id/join', async (req, res) => {
   const groomid = req.params.id;
   const room = await Room.findOne({ where: { groomid } });
   if (!room) return res.json({ code: 1, msg: '房间不存在' });
+  if (room.gamestate >= 2 || room.gamestate === 99) {
+    return res.json({ code: 1, msg: '房间已结束' });
+  }
   const now = Math.floor(Date.now() / 1000);
   if (room.gamestate === 0 && now < room.starttime) {
     return res.json({ code: 1, msg: '房间尚未开始' });
@@ -76,7 +79,7 @@ router.post('/rooms/:id/join', async (req, res) => {
   try { game = JSON.parse(room.gamevars || '{}'); } catch (e) {}
   if (!game.players) game.players = {};
   if (!game.players[user.uid]) {
-    const team = req.body.team || 1;
+    const team = (req.body && req.body.team) || 1;
     game.players[user.uid] = {
       hp: 20, atk: 5, def: 3, spd: 10, pos: [0, 0], team, username: user.username,
       inventory: [], status: {}, kills: 0,

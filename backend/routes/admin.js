@@ -30,7 +30,22 @@ router.post('/admin/rooms/:id/end', async (req, res) => {
   const { id } = req.params;
   const room = await Room.findOne({ where: { groomid: id } });
   if (!room) return res.json({ code: 1, msg: '房间不存在' });
-  await room.update({ gamestate: 99, groomstatus: 0 });
+  let game = {};
+  try { game = JSON.parse(room.gamevars || '{}'); } catch (e) {}
+  if (game.players) {
+    for (const p of Object.values(game.players)) {
+      p.hp = 0;
+      p.alive = false;
+    }
+  }
+  if (Array.isArray(game.npcs)) {
+    for (const n of game.npcs) {
+      n.hp = 0;
+      n.alive = false;
+    }
+  }
+  await room.update({ gamestate: 99, groomstatus: 0, gamevars: JSON.stringify(game) });
+  await User.update({ roomid: 0 }, { where: { roomid: id } });
   res.json({ code: 0, msg: '房间已结束' });
 });
 
