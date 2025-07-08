@@ -3,7 +3,7 @@ const router = express.Router();
 const auth = require('../middlewares/auth');
 const User = require('../models/User');
 const Room = require('../models/Room');
-const { createRoom } = require('../utils/scheduler');
+const { createRoom, endGame } = require('../utils/scheduler');
 
 // auth + admin check middleware
 router.use(auth);
@@ -30,8 +30,14 @@ router.post('/admin/rooms/:id/end', async (req, res) => {
   const { id } = req.params;
   const room = await Room.findOne({ where: { groomid: id } });
   if (!room) return res.json({ code: 1, msg: '房间不存在' });
-  await room.update({ gamestate: 99, groomstatus: 0 });
-  res.json({ code: 0, msg: '房间已结束' });
+  try {
+    await endGame(room, 'abort');
+    await room.update({ groomstatus: 0 });
+    res.json({ code: 0, msg: '房间已结束' });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ code: 1, msg: '结束失败' });
+  }
 });
 
 module.exports = router;
