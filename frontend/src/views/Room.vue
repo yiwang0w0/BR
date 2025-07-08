@@ -41,11 +41,13 @@
 
       <div v-if="room" class="actions" style="margin-top: 1rem;">
         <p>当前位置：{{ pos[0] }}, {{ pos[1] }} HP: {{ hp }}</p>
+        <div class="mb-2">
+          <el-select v-model="selectedMap" placeholder="选择目标地图" size="small" style="width: 200px;">
+            <el-option v-for="m in maps" :key="m.id" :label="m.name" :value="m.id" />
+          </el-select>
+          <el-button class="ml-1" size="small" type="primary" @click="moveToMap">移动</el-button>
+        </div>
         <div>
-          <el-button size="small" @click="move(0, -1)">↑</el-button>
-          <el-button size="small" @click="move(-1, 0)">←</el-button>
-          <el-button size="small" @click="move(1, 0)">→</el-button>
-          <el-button size="small" @click="move(0, 1)">↓</el-button>
           <el-button size="small" type="danger" @click="attack">攻击</el-button>
           <el-button size="small" type="primary" @click="search">搜索</el-button>
         </div>
@@ -106,7 +108,47 @@ const chatLog = ref([])
 const chatVisible = ref(true)
 const uid = ref(null)
 const searchResult = ref(null)
+
 const auth = useAuthStore()
+
+const maps = [
+  { id: 0, name: '无月之影' },
+  { id: 1, name: '端点' },
+  { id: 2, name: 'RF高校' },
+  { id: 3, name: '雪之镇' },
+  { id: 4, name: '索拉利斯' },
+  { id: 5, name: '指挥中心' },
+  { id: 6, name: '梦幻馆' },
+  { id: 7, name: '清水池' },
+  { id: 8, name: '白穗神社' },
+  { id: 9, name: '墓地' },
+  { id: 10, name: '麦斯克林' },
+  { id: 11, name: '对天使用作战本部' },
+  { id: 12, name: '夏之镇' },
+  { id: 13, name: '三体星' },
+  { id: 14, name: '光坂高校' },
+  { id: 15, name: '守矢神社' },
+  { id: 16, name: '常磐森林' },
+  { id: 17, name: '常磐台中学' },
+  { id: 18, name: '秋之镇' },
+  { id: 19, name: '精灵中心' },
+  { id: 20, name: '春之镇' },
+  { id: 21, name: '圣Gradius学园' },
+  { id: 22, name: '初始之树' },
+  { id: 23, name: '幻想世界' },
+  { id: 24, name: '永恒的世界' },
+  { id: 25, name: '妖精驿站' },
+  { id: 26, name: '冰封墓场' },
+  { id: 27, name: '花菱商厦' },
+  { id: 28, name: 'FARGO前基地' },
+  { id: 29, name: '风祭森林' },
+  { id: 30, name: '天使队移动格纳库' },
+  { id: 31, name: '和田町研究所' },
+  { id: 32, name: 'ＳＣＰ研究设施' },
+  { id: 33, name: '雏菊之丘' },
+  { id: 34, name: '英灵殿' },
+]
+const selectedMap = ref(null)
 
 async function loadData() {
   ws.connect(auth.token)
@@ -164,6 +206,7 @@ async function move(dx, dy) {
   const nx = x + dx
   const ny = y + dy
   await sendAction('move', { x: nx, y: ny })
+
 }
 
 async function useItem(item) {
@@ -179,6 +222,7 @@ async function search() {
   if (res && res.data.data && res.data.data.searchResult) {
     handleSearchResult(res.data.data.searchResult)
   }
+
 }
 
 async function sendChat() {
@@ -278,4 +322,6 @@ function handleMessage(msg) {
 
 <style scoped>
 .mt-2 { margin-top: 20px; }
+.mb-2 { margin-bottom: 10px; }
+.ml-1 { margin-left: 5px; }
 </style>

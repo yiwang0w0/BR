@@ -10,6 +10,7 @@ const logger = require('../utils/logger');
 const mapUtil = require('../utils/map');
 const { checkGameOverAndEnd } = require('../utils/gameover');
 const { emitRoomUpdate, emitBattleResult, sendRoomMessage } = require('../utils/socket'); // WebSocket 工具
+const { drawItem } = require('../utils/map');
 
 router.use(auth);
 

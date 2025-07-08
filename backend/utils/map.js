@@ -21,15 +21,19 @@ function initMap() {
       amount: Number(amount) || 0,
       attr: attr || ''
     });
+
   }
   return map;
 }
 
+
 function drawItem(map, mapId) {
   const items = map[mapId];
+
   if (!items || items.length === 0) return null;
   const idx = Math.floor(Math.random() * items.length);
   return items.splice(idx, 1)[0];
 }
+
 
 module.exports = { initMap, drawItem, itemfindMods, meetmanMods };

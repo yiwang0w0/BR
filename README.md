@@ -116,17 +116,30 @@ npm run dev
 - 推荐配合 PM2 生产部署，支持 Docker 一键启动（后续补充 docker-compose.yaml）。
 - 前端对接后端 API，接口文档见 [AGENTS.md](AGENTS.md)。
 
+## 游戏搜索流程概述
+
+项目源于根目录 `DTS-SAMPLE` 中的 PHP 版本，为保持玩法一致，搜索逻辑需与原作相
+同。原版玩家在地图列表中选定地点后反复点击“搜索”，后端依次判定事件、陷阱、遇敌
+及拾取物品。每个地图拥有独立的物品池和 NPC/玩家列表，搜索时从当前地图的池子随机
+取得物品或遇敌。
+
+目前 Node 版 `/game/:groomid/action` 的 `search` 操作只写入日志，并未真正读取地
+图数据。前端也通过方向键移动坐标再调用 `search`，与原版的点选式流程有所区别。按
+照 PHP 版逻辑，后端需在房间创建时载入 `backend/data/mapitems.json` 初始化地图物品，
+`search` 时再从所在地图抽取物品或 NPC，并按概率进入战斗。前端可改为直接选择目
+标地点后执行搜索，更贴近原作体验。
+
 ## 主要函数说明
 
 以下列出了项目中常见的函数及其作用，方便快速了解代码：
 
 ### 后端工具函数
-- `initNpcs(count, mapSize)`：生成指定数量的 NPC【F:backend/utils/npc.js†L3-L26】
-- `act(game)`：驱动 NPC 行动并处理与玩家的交互【F:backend/utils/npc.js†L85-L119】
-- `createRoom()`：创建新的游戏房间【F:backend/utils/scheduler.js†L7-L39】
-- `startRoom(groomid)`：房间开始进入游戏阶段【F:backend/utils/scheduler.js†L41-L46】
-- `endGame(room, result, winner)`：结束游戏并保存历史【F:backend/utils/scheduler.js†L48-L68】
-- `scheduleRooms()`：按照配置定时创建房间【F:backend/utils/scheduler.js†L70-L84】
+- `initNpcs(count, mapSize)`：生成指定数量的 NPC【F:backend/utils/npc.js†L3-L34】
+- `act(game)`：驱动 NPC 行动并处理与玩家的交互【F:backend/utils/npc.js†L93-L140】
+- `createRoom()`：创建新的游戏房间【F:backend/utils/scheduler.js†L16-L53】
+- `startRoom(groomid)`：房间开始进入游戏阶段【F:backend/utils/scheduler.js†L58-L64】
+- `endGame(room, result, winner)`：结束游戏并保存历史【F:backend/utils/scheduler.js†L93-L143】
+- `scheduleRooms()`：按照配置定时创建房间【F:backend/utils/scheduler.js†L148-L167】
 - `add(token)`、`has(token)`、`remove(token)`：刷新令牌的增删查【F:backend/utils/tokenStore.js†L11-L33】
 - `combineItems(player, items)`：基础道具合成逻辑【F:backend/utils/events.js†L6-L31】
 - `restPlayer(player, mode, log)`：睡眠/治疗等恢复效果【F:backend/utils/events.js†L33-L49】
