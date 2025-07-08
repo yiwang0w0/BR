@@ -5,6 +5,7 @@ const sequelize = require('./models/index'); // 数据库连接
 const userRouter = require('./routes/user'); // 用户相关路由
 const roomRouter = require('./routes/room');
 const messageRouter = require('./routes/message');
+const adminRouter = require('./routes/admin');
 const { scheduleRooms } = require('./utils/scheduler');
 
 
@@ -15,6 +16,7 @@ app.use(express.json());
 app.use('/api', userRouter);
 app.use('/api', roomRouter);
 app.use('/api', messageRouter);
+app.use('/api', adminRouter);
 // 数据库连接测试
 sequelize.authenticate()
   .then(() => console.log('数据库连接成功！'))

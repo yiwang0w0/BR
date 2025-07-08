@@ -7,6 +7,7 @@ import UserProfile from '../views/UserProfile.vue'
 import Messages from '../views/Messages.vue'
 import History from '../views/History.vue'
 import GameConfig from '../views/GameConfig.vue'
+import ManageGame from '../views/ManageGame.vue'
 
 const routes = [
   { path: '/', component: Home },                       // 首页
@@ -17,7 +18,8 @@ const routes = [
   { path: '/game-config/:id', component: GameConfig },  // 游戏配置
   { path: '/user', component: UserProfile },            // 个人信息
   { path: '/messages', component: Messages },           // 消息系统
-  { path: '/history', component: History }              // 历史对局
+  { path: '/history', component: History },             // 历史对局
+  { path: '/manage-game', component: ManageGame }       // 管理游戏
 ]
 
 const router = createRouter({

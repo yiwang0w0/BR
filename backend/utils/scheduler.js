@@ -14,7 +14,7 @@ async function createRoom() {
     turn: 0,
     npcs: npc.initNpcs()
   };
-  await Room.create({
+  const room = await Room.create({
     groomid,
     gamenum,
     gametype: 1,
@@ -27,6 +27,7 @@ async function createRoom() {
     starttime: Math.floor(Date.now() / 1000),
     gamevars: JSON.stringify(gamevars)
   });
+  return room;
 }
 
 function scheduleRooms() {
@@ -46,4 +47,4 @@ function scheduleRooms() {
   cron.schedule(pattern, createRoom);
 }
 
-module.exports = { scheduleRooms };
+module.exports = { scheduleRooms, createRoom };

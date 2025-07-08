@@ -32,6 +32,7 @@
         <p>胜场：{{ user.wingames }} / {{ user.validgames }} （胜率 {{ winRate }}）</p>
         <p>ELO：{{ user.elo_rating }}</p>
         <p>金币：{{ user.gold }}</p>
+        <el-button v-if="user.groupid > 1" type="warning" @click="goManage">管理游戏</el-button>
       </div>
       <div v-else>请先登录。</div>
     </el-card>
@@ -40,6 +41,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import http from '../utils/http'
 import { ElMessage } from 'element-plus'
 
@@ -51,6 +53,8 @@ const editForm = reactive({
   lastword: '',
   gender: ''
 })
+
+const router = useRouter()
 
 const winRate = computed(() => {
   if (!user.value) return '0%'
@@ -94,6 +98,10 @@ async function onSave() {
     ElMessage.error('网络错误')
     console.error(e)
   }
+}
+
+function goManage() {
+  router.push('/manage-game')
 }
 
 onMounted(fetchUser)
