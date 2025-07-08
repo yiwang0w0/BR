@@ -1,8 +1,9 @@
 <template>
   <el-card>
     <h1>欢迎来到DTS大逃杀游戏</h1>
-    <p>请选择左侧菜单，或进入房间大厅。</p>
-    <el-button type="primary" @click="$router.push('/rooms')">进入房间大厅</el-button>
+    <p v-if="auth.isLoggedIn()">请选择左侧菜单，或进入房间大厅。</p>
+    <el-button v-if="auth.isLoggedIn()" type="primary" @click="$router.push('/rooms')">进入房间大厅</el-button>
+    <p v-else>登录后可进入房间大厅。</p>
     <div v-if="!auth.isLoggedIn()" style="margin-top:20px;">
       <el-form :model="form" @submit.prevent="onSubmit" label-width="80px">
         <el-form-item label="用户名">
