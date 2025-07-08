@@ -40,12 +40,13 @@
       <p v-else>加载中...</p>
 
       <div v-if="room" class="actions" style="margin-top: 1rem;">
-        <p>当前位置：{{ pos[0] }}, {{ pos[1] }}</p>
+        <p>当前位置：{{ pos[0] }}, {{ pos[1] }} HP: {{ hp }}</p>
         <div>
           <el-button size="small" @click="move(0, -1)">↑</el-button>
           <el-button size="small" @click="move(-1, 0)">←</el-button>
           <el-button size="small" @click="move(1, 0)">→</el-button>
           <el-button size="small" @click="move(0, 1)">↓</el-button>
+          <el-button size="small" type="danger" @click="attack">攻击</el-button>
         </div>
       </div>
 
@@ -103,11 +104,13 @@ const roomId = route.params.id
 const rooms = ref([])
 const room = ref(null)
 const pos = ref([0, 0])
+const hp = ref(0)
 const log = ref([])
 const inventory = ref([])
 const chatText = ref('')
 const chatLog = ref([])
 const chatVisible = ref(true)
+const uid = ref(null)
 
 onMounted(async () => {
   if (!roomId) {
@@ -120,6 +123,16 @@ onMounted(async () => {
     if (res.data.code === 0) {
       room.value = res.data.data
       if (res.data.data.inventory) inventory.value = res.data.data.inventory
+      const me = await http.get('/user/me')
+      if (me.data.code === 0) {
+        uid.value = me.data.data.uid
+        if (res.data.data.gamevars && res.data.data.gamevars.players && res.data.data.gamevars.players[uid.value]) {
+          hp.value = res.data.data.gamevars.players[uid.value].hp
+          if (res.data.data.gamevars.players[uid.value].pos) {
+            pos.value = res.data.data.gamevars.players[uid.value].pos
+          }
+        }
+      }
     }
   }
 })
@@ -157,6 +170,7 @@ function sleep() { sendAction('sleep') }
 function heal() { sendAction('heal') }
 function openShop() { sendAction('shop') }
 function showSkills() { sendAction('skills') }
+function attack() { sendAction('attack') }
 
 async function sendChat() {
   if (!chatText.value) return
@@ -174,8 +188,25 @@ async function sendAction(type, params = {}) {
       log.value.push(`操作失败: ${res.data.msg}`)
     } else {
       log.value.push(`${type} 操作成功`)
-      if (res.data.data && res.data.data.inventory) {
-        inventory.value = res.data.data.inventory
+      if (res.data.data) {
+        const gameInfo = res.data.data.game || res.data.data
+        if (gameInfo.players) {
+          if (!uid.value) {
+            const me = await http.get('/user/me')
+            if (me.data.code === 0) uid.value = me.data.data.uid
+          }
+          const p = gameInfo.players[uid.value]
+          if (p) {
+            hp.value = p.hp
+            pos.value = p.pos
+          }
+        }
+        if (res.data.data.gameover) {
+          alert(res.data.data.gameover === 'win' ? '胜利！' : '你死了')
+        }
+        if (gameInfo.inventory) {
+          inventory.value = gameInfo.inventory
+        }
       }
     }
   } catch (e) {
