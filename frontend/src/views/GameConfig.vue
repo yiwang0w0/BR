@@ -18,16 +18,16 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue'
+import { reactive, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
 const router = useRouter()
-const roomId = route.params.id
+const roomId = computed(() => route.params.id)
 
 const form = reactive({ nickname: '', gender: 'm' })
 
 function startGame() {
-  router.push(`/room/${roomId}`)
+  router.push(`/room/${roomId.value}`)
 }
 </script>
