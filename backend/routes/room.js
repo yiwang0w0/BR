@@ -104,6 +104,12 @@ router.post('/game/:groomid/action', async (req, res) => {
   const room = await Room.findOne({ where: { groomid } });
   if (!room) return res.json({ code: 1, msg: '房间不存在' });
 
+  const user = await User.findByPk(uid);
+  if (!user) return res.status(404).json({ code: 1, msg: '用户不存在' });
+  if (parseInt(user.roomid) !== parseInt(groomid)) {
+    return res.json({ code: 1, msg: '未在当前房间' });
+  }
+
   const supported = ['move', 'attack', 'search', 'itemDecision'];
   if (!supported.includes(type)) {
     return res.json({ code: 1, msg: '该操作暂未实现' });
@@ -114,10 +120,18 @@ router.post('/game/:groomid/action', async (req, res) => {
   if (!game.players) game.players = {};
   if (!game.log) game.log = [];
 
+  if (!game.players[uid]) {
+    const fresh = await Room.findOne({ where: { groomid } });
+    try { game = JSON.parse(fresh.gamevars || '{}'); } catch (e) {}
+    if (!game.players || !game.players[uid]) {
+      return res.json({ code: 1, msg: '未加入房间' });
+    }
+  }
+
   // 玩家主动行动阶段
   if (type === 'move') {
     const player = game.players[uid];
-    if (!player) return res.json({ code: 1, msg: '玩家不存在' });
+    if (!player) return res.json({ code: 1, msg: '未加入房间' });
     player.pos = [params.x, params.y];
 
     // 触发地图事件等
@@ -132,7 +146,7 @@ router.post('/game/:groomid/action', async (req, res) => {
 
     if (type === 'search') {
       const player = game.players[uid];
-      if (!player) return res.json({ code: 1, msg: '玩家不存在' });
+    if (!player) return res.json({ code: 1, msg: '未加入房间' });
       const mapId = player.pos ? player.pos[0] : 0;
       let result = { type: 'none' };
       const meetRate = 20 + (mapUtil.meetmanMods[mapId] || 0);
@@ -195,7 +209,7 @@ router.post('/game/:groomid/action', async (req, res) => {
 
   if (type === 'attack') {
     const player = game.players[uid];
-    if (!player) return res.json({ code: 1, msg: '玩家不存在' });
+    if (!player) return res.json({ code: 1, msg: '未加入房间' });
     const targetId = params.npcId || params.playerId;
     let attackEvents = [];
     if (targetId && game.npcs && game.npcs.length > 0) {
