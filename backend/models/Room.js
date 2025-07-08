@@ -11,6 +11,11 @@ const Room = sequelize.define('bra_game', {
   deathnum: DataTypes.INTEGER.UNSIGNED,
   groomtype: DataTypes.INTEGER.UNSIGNED,
   groomstatus: DataTypes.INTEGER.UNSIGNED,
+  roomvars: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+    defaultValue: ''
+  },
   starttime: DataTypes.INTEGER.UNSIGNED,
   gamevars: {
     type: DataTypes.TEXT,

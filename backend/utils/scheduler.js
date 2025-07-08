@@ -1,3 +1,4 @@
+const cron = require('node-cron');
 const Room = require('../models/Room');
 const History = require('../models/History');
 const config = require('../config/gameConfig');
@@ -25,6 +26,7 @@ async function createRoom() {
     deathnum: 0,
     groomtype: 1,
     groomstatus: 0,
+    roomvars: JSON.stringify({}),
     starttime,
     gamevars: JSON.stringify(gamevars)
   });
@@ -61,4 +63,21 @@ async function endGame(room, result, winner) {
   setTimeout(() => createRoom(), 60 * 1000);
 }
 
-module.exports = { createRoom, startRoom, endGame };
+function scheduleRooms() {
+  if (!config.startMode) return;
+  let pattern;
+  if (config.startMode === 1) {
+    pattern = `${config.startMin} ${config.startHour} * * *`;
+  } else if (config.startMode === 2) {
+    const hour = config.startHour > 0 ? config.startHour : 1;
+    pattern = `0 */${hour} * * *`;
+  } else if (config.startMode === 3) {
+    const minute = config.startMin > 0 ? config.startMin : 1;
+    pattern = `*/${minute} * * * *`;
+  } else {
+    return;
+  }
+  cron.schedule(pattern, createRoom);
+}
+
+module.exports = { createRoom, startRoom, endGame, scheduleRooms };
