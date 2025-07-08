@@ -29,6 +29,17 @@ function act(game) {
     ][Math.floor(Math.random() * 4)];
     npc.pos[0] += dir[0];
     npc.pos[1] += dir[1];
+
+    if (game.players) {
+      for (const pid in game.players) {
+        const p = game.players[pid];
+        if (p.hp > 0 && p.pos && p.pos[0] === npc.pos[0] && p.pos[1] === npc.pos[1]) {
+          p.hp -= npc.atk;
+          if (!game.log) game.log = [];
+          game.log.push({ time: Date.now(), uid: Number(pid), type: 'hurt', dmg: npc.atk });
+        }
+      }
+    }
   }
   game.turn = (game.turn || 0) + 1;
 }

@@ -46,6 +46,16 @@ router.post('/rooms/:id/join', async (req, res) => {
     return res.json({ code: 1, msg: '已在房间中' });
   }
   await user.update({ roomid: groomid });
+
+  // 初始化玩家数据
+  let game = {};
+  try { game = JSON.parse(room.gamevars || '{}'); } catch (e) {}
+  if (!game.players) game.players = {};
+  if (!game.players[user.uid]) {
+    game.players[user.uid] = { hp: 20, atk: 5, pos: [0, 0] };
+  }
+  await room.update({ gamevars: JSON.stringify(game) });
+
   res.json({ code: 0, msg: '加入房间成功' });
 });
 
@@ -92,7 +102,35 @@ router.post('/game/:groomid/action', async (req, res) => {
     game.log.push({ time: Date.now(), uid, type: 'move', pos: [params.x, params.y] });
     npc.act(game);
     await room.update({ gamevars: JSON.stringify(game) });
-    return res.json({ code: 0, msg: 'ok', data: game });
+    let gameover = null;
+    if (game.players[uid].hp !== undefined && game.players[uid].hp <= 0) gameover = 'lose';
+    if (game.npcs && game.npcs.length === 0) gameover = 'win';
+    return res.json({ code: 0, msg: 'ok', data: { game, gameover } });
+  }
+
+  if (type === 'attack') {
+    const uid = req.user.uid;
+    if (!game.players || !game.players[uid]) {
+      return res.json({ code: 1, msg: '玩家不存在' });
+    }
+    const player = game.players[uid];
+    const target = (game.npcs || []).find(n => n.id === params.npcId) ||
+      (game.npcs || []).find(n => n.pos[0] === player.pos[0] && n.pos[1] === player.pos[1]);
+    if (!target) return res.json({ code: 1, msg: '没有目标' });
+    target.hp -= player.atk;
+    if (!game.log) game.log = [];
+    game.log.push({ time: Date.now(), uid, type: 'attack', npc: target.id });
+    if (target.hp <= 0) {
+      game.npcs = game.npcs.filter(n => n.id !== target.id);
+    }
+    npc.act(game);
+    await room.update({ gamevars: JSON.stringify(game) });
+
+    let gameover = null;
+    if (player.hp <= 0) gameover = 'lose';
+    if (!game.npcs.length) gameover = 'win';
+
+    return res.json({ code: 0, msg: 'ok', data: { game, gameover } });
   }
 
   res.json({ code: 1, msg: '未知操作' });
