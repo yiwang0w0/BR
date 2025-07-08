@@ -4,7 +4,9 @@ const History = require('../models/History');
 const config = require('../config/gameConfig');
 const npc = require('./npc');
 
-async function createRoom() {
+const TEAM_MODES = [11, 12, 13, 14];
+
+async function createRoom(gametype = 1) {
   const max = await Room.max('groomid');
   const groomid = (max || 0) + 1;
   const gamenum = 10000 + groomid;
@@ -19,7 +21,7 @@ async function createRoom() {
   const room = await Room.create({
     groomid,
     gamenum,
-    gametype: 1,
+    gametype,
     gamestate: 0,
     validnum: 10,
     alivenum: 10,
@@ -30,7 +32,8 @@ async function createRoom() {
     starttime,
     gamevars: JSON.stringify(gamevars)
   });
-  setTimeout(() => startRoom(room.groomid), config.readyMin * 60 * 1000);
+  const delay = Math.max(starttime - Math.floor(Date.now() / 1000), 0) * 1000;
+  setTimeout(() => startRoom(room.groomid), delay);
   return room;
 }
 
@@ -41,9 +44,44 @@ async function startRoom(groomid) {
   }
 }
 
-async function endGame(room, result, winner) {
+function checkEndConditions(game, gametype) {
+  const alivePlayers = Object.values(game.players || {}).filter(p => p.hp > 0);
+  if (TEAM_MODES.includes(gametype)) {
+    const teams = new Set(alivePlayers.map(p => p.team));
+    if (alivePlayers.length === 0) return { result: 'lose' };
+    if (teams.size === 1) return { result: 'win', winner: `Team${[...teams][0]}` };
+    return null;
+  }
+  if (gametype === 2) {
+    if (!game.npcs || game.npcs.length === 0) {
+      return { result: 'win', winner: alivePlayers.map(p => p.username).join(',') };
+    }
+    if (alivePlayers.length === 0) return { result: 'lose' };
+    return null;
+  }
+  // default personal battle
+  if (alivePlayers.length === 1) return { result: 'win', winner: alivePlayers[0].username };
+  if (alivePlayers.length === 0) return { result: 'lose' };
+  return null;
+}
+
+async function endGame(room, result, winner, game = null) {
   if (room.gamestate === 2) return; // already ended
+  if (!game) {
+    try { game = JSON.parse(room.gamevars || '{}'); } catch (e) { game = {}; }
+  }
   await room.update({ gamestate: 2 });
+
+  const kills = Object.values(game.players || {}).map(p => p.kills || 0);
+  const maxKill = Math.max(0, ...kills);
+  const topPlayer = Object.values(game.players || {}).find(p => (p.kills || 0) === maxKill);
+
+  const summary = {
+    result,
+    winner,
+    kills: Object.fromEntries(Object.entries(game.players || {}).map(([pid, p]) => [pid, p.kills || 0]))
+  };
+
   const gid = room.gamenum;
   await History.create({
     gid,
@@ -56,11 +94,10 @@ async function endGame(room, result, winner) {
     getime: Math.floor(Date.now() / 1000),
     winnernum: result === 'win' ? 1 : 0,
     winnerlist: winner || '',
-    winnerpdata: '',
-    validlist: '',
-    hnews: JSON.stringify(room.gamevars || '')
+    winnerpdata: topPlayer ? JSON.stringify(topPlayer) : '',
+    validlist: Object.keys(game.players || {}).join(','),
+    hnews: JSON.stringify(summary)
   });
-  setTimeout(() => createRoom(), 60 * 1000);
 }
 
 function scheduleRooms() {
@@ -80,4 +117,4 @@ function scheduleRooms() {
   cron.schedule(pattern, createRoom);
 }
 
-module.exports = { createRoom, startRoom, endGame, scheduleRooms };
+module.exports = { createRoom, startRoom, endGame, scheduleRooms, checkEndConditions };

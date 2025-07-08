@@ -4,7 +4,7 @@ const { Op } = require('sequelize');
 const auth = require('../middlewares/auth');
 const Room = require('../models/Room');
 const npc = require('../utils/npc');
-const { endGame } = require('../utils/scheduler');
+const { endGame, checkEndConditions } = require('../utils/scheduler');
 
 router.use(auth);
 
@@ -48,7 +48,8 @@ router.post('/rooms/:id/join', async (req, res) => {
   try { game = JSON.parse(room.gamevars || '{}'); } catch (e) {}
   if (!game.players) game.players = {};
   if (!game.players[user.uid]) {
-    game.players[user.uid] = { hp: 20, atk: 5, pos: [0, 0] };
+    const team = req.body.team || 1;
+    game.players[user.uid] = { hp: 20, atk: 5, pos: [0, 0], team, username: user.username, kills: 0 };
   }
   await room.update({ gamevars: JSON.stringify(game) });
 
@@ -95,11 +96,9 @@ router.post('/game/:groomid/action', async (req, res) => {
     game.log.push({ time: Date.now(), uid, type: 'move', pos: [params.x, params.y] });
     npc.act(game);
     await room.update({ gamevars: JSON.stringify(game) });
-    let gameover = null;
-    if (game.players[uid].hp !== undefined && game.players[uid].hp <= 0) gameover = 'lose';
-    if (game.npcs && game.npcs.length === 0) gameover = 'win';
-    if (gameover) await endGame(room, gameover, req.user.username);
-    return res.json({ code: 0, msg: 'ok', data: { game, gameover } });
+    const result = checkEndConditions(game, room.gametype);
+    if (result) await endGame(room, result.result, result.winner, game);
+    return res.json({ code: 0, msg: 'ok', data: { game, gameover: result ? result.result : null } });
   }
 
   if (type === 'attack') {
@@ -116,16 +115,15 @@ router.post('/game/:groomid/action', async (req, res) => {
     game.log.push({ time: Date.now(), uid, type: 'attack', npc: target.id });
     if (target.hp <= 0) {
       game.npcs = game.npcs.filter(n => n.id !== target.id);
+      player.kills = (player.kills || 0) + 1;
+      game.log.push({ time: Date.now(), uid, type: 'kill', npc: target.id });
     }
     npc.act(game);
     await room.update({ gamevars: JSON.stringify(game) });
 
-    let gameover = null;
-    if (player.hp <= 0) gameover = 'lose';
-    if (!game.npcs.length) gameover = 'win';
-
-    if (gameover) await endGame(room, gameover, req.user.username);
-    return res.json({ code: 0, msg: 'ok', data: { game, gameover } });
+    const result = checkEndConditions(game, room.gametype);
+    if (result) await endGame(room, result.result, result.winner, game);
+    return res.json({ code: 0, msg: 'ok', data: { game, gameover: result ? result.result : null } });
   }
 
   res.json({ code: 1, msg: '未知操作' });
