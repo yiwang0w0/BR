@@ -116,6 +116,26 @@ npm run dev
 - 推荐配合 PM2 生产部署，支持 Docker 一键启动（后续补充 docker-compose.yaml）。
 - 前端对接后端 API，接口文档见 [AGENTS.md](AGENTS.md)。
 
+## 主要函数说明
+
+以下列出了项目中常见的函数及其作用，方便快速了解代码：
+
+### 后端工具函数
+- `initNpcs(count, mapSize)`：生成指定数量的 NPC【F:backend/utils/npc.js†L3-L18】
+- `act(game)`：驱动 NPC 行动并处理与玩家的交互【F:backend/utils/npc.js†L21-L45】
+- `createRoom()`：创建新的游戏房间【F:backend/utils/scheduler.js†L7-L35】
+- `startRoom(groomid)`：房间开始进入游戏阶段【F:backend/utils/scheduler.js†L37-L42】
+- `endGame(room, result, winner)`：结束游戏并保存历史【F:backend/utils/scheduler.js†L44-L64】
+- `scheduleRooms()`：按照配置定时创建房间【F:backend/utils/scheduler.js†L66-L81】
+- `add(token)`、`has(token)`、`remove(token)`：刷新令牌的增删查【F:backend/utils/tokenStore.js†L11-L33】
+
+### 中间件
+- `auth(req, res, next)`：JWT 鉴权中间件【F:backend/middlewares/auth.js†L3-L16】
+
+### 前端函数
+- `setTokens(at, rt)`、`logout()`：管理登录状态【F:frontend/src/stores/auth.js†L10-L27】
+- `http`：封装的 axios 实例，统一处理请求与 token【F:frontend/src/utils/http.js†L1-L23】
+
 ---
 
 ## 贡献
