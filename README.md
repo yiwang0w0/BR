@@ -128,6 +128,8 @@ npm run dev
 - `endGame(room, result, winner)`：结束游戏并保存历史【F:backend/utils/scheduler.js†L48-L68】
 - `scheduleRooms()`：按照配置定时创建房间【F:backend/utils/scheduler.js†L70-L84】
 - `add(token)`、`has(token)`、`remove(token)`：刷新令牌的增删查【F:backend/utils/tokenStore.js†L11-L33】
+- `combineItems(player, items)`：基础道具合成逻辑【F:backend/utils/events.js†L6-L31】
+- `restPlayer(player, mode, log)`：睡眠/治疗等恢复效果【F:backend/utils/events.js†L33-L49】
 
 ### 中间件
 - `auth(req, res, next)`：JWT 鉴权中间件【F:backend/middlewares/auth.js†L3-L16】
