@@ -63,17 +63,7 @@
             </template>
           </el-table-column>
         </el-table>
-        <div class="mt-2">
-          <el-button size="small" @click="combine">道具合成</el-button>
-          <el-button size="small" @click="sortBag">整理包裹</el-button>
-          <el-button size="small" @click="dropItem">道具丢弃</el-button>
-          <el-button size="small" @click="toggleWeaponMode">武器模式</el-button>
-          <el-button size="small" @click="showBagInfo">背包信息</el-button>
-          <el-button size="small" @click="sleep">睡眠</el-button>
-          <el-button size="small" @click="heal">治疗</el-button>
-          <el-button size="small" @click="openShop">商店</el-button>
-          <el-button size="small" @click="showSkills">技能表</el-button>
-        </div>
+        <!-- 其他操作按钮待实现 -->
       </el-card>
 
       <el-card class="mt-2">
@@ -97,6 +87,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import { ElMessageBox } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
 import ws from '../utils/ws'
 import { useRoute, useRouter } from 'vue-router'
@@ -116,6 +107,8 @@ const chatText = ref('')
 const chatLog = ref([])
 const chatVisible = ref(true)
 const uid = ref(null)
+const searchResult = ref(null)
+
 const auth = useAuthStore()
 
 const maps = [
@@ -208,33 +201,28 @@ function enterRoom(id) {
   router.push(`/room/${id}`)
 }
 
-async function moveToMap() {
-  if (selectedMap.value === null) {
-    log.value.push('请选择目标地图')
-    return
-  }
-  await sendAction('move', { map: selectedMap.value })
+async function move(dx, dy) {
+  const [x, y] = pos.value
+  const nx = x + dx
+  const ny = y + dy
+  await sendAction('move', { x: nx, y: ny })
+
 }
 
 async function useItem(item) {
   await sendAction('use_item', { item })
 }
 
-function combine() { sendAction('combine') }
-function sortBag() { sendAction('sort_bag') }
-function dropItem() { sendAction('drop_item') }
-function toggleWeaponMode() { sendAction('weapon_mode') }
-function showBagInfo() { sendAction('bag_info') }
-function sleep() { sendAction('sleep') }
-function heal() { sendAction('heal') }
-function openShop() { sendAction('shop') }
-function showSkills() { sendAction('skills') }
-async function attack() {
-  await sendAction('attack')
+function attack(npcId) {
+  sendAction('attack', { npcId })
 }
 
 async function search() {
-  await sendAction('search')
+  const res = await sendAction('search')
+  if (res && res.data.data && res.data.data.searchResult) {
+    handleSearchResult(res.data.data.searchResult)
+  }
+
 }
 
 async function sendChat() {
@@ -274,8 +262,42 @@ async function sendAction(type, params = {}) {
         }
       }
     }
+    return res
   } catch (e) {
     log.value.push('请求失败')
+    return null
+  }
+}
+
+function handleSearchResult(r) {
+  if (!r) return
+  if (r.type === 'item') {
+    ElMessageBox.confirm(`发现 ${r.item.name}，是否拾取？`, '发现物品', {
+      confirmButtonText: '拾取',
+      cancelButtonText: '丢弃'
+    }).then(async () => {
+      const res = await sendAction('itemDecision', { decision: 'take' })
+      if (res && res.data.code === 1 && res.data.msg === 'bagFull') {
+        const idx = await ElMessageBox.prompt('背包已满，请输入替换的格子索引(0开始)', '背包满', {
+          confirmButtonText: '确认',
+          cancelButtonText: '取消'
+        }).then(d => Number(d.value)).catch(() => null)
+        if (idx !== null) {
+          await sendAction('itemDecision', { decision: 'take', replaceIndex: idx })
+        }
+      }
+    }).catch(() => {
+      sendAction('itemDecision', { decision: 'drop' })
+    })
+  } else if (r.type === 'npc') {
+    const tip = r.playerFirst ? '遭遇 ' + r.npc.name + '，是否攻击？'
+      : '被 ' + r.npc.name + ' 先制攻击，是否反击？'
+    ElMessageBox.confirm(tip, '遭遇敌人', {
+      confirmButtonText: '攻击',
+      cancelButtonText: '离开'
+    }).then(() => {
+      attack(r.npc.id)
+    })
   }
 }
 

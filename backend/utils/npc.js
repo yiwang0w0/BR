@@ -24,6 +24,7 @@ function initNpcs(count = 3, mapSize = 10, blocked = [], mapCount = 1) {
       name: base.name,
       hp: base.hp,
       atk: base.atk,
+      spd: base.spd || 5,
       pos,
       map,
       alive: true
@@ -149,4 +150,4 @@ function act(game) {
   game.turn = (game.turn || 0) + 1;
 }
 
-module.exports = { initNpcs, act };
+module.exports = { initNpcs, act, attack };
