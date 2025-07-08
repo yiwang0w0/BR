@@ -8,7 +8,7 @@ const npc = require('../utils/npc');
 const events = require('../utils/events');
 const logger = require('../utils/logger');
 const { checkGameOverAndEnd } = require('../utils/gameover');
-const { emitRoomUpdate, emitBattleResult, getIO } = require('../utils/socket'); // Socket.io工具，可选
+const { emitRoomUpdate, emitBattleResult, sendRoomMessage } = require('../utils/socket'); // WebSocket 工具
 
 router.use(auth);
 
@@ -69,10 +69,9 @@ router.post('/rooms/:id/join', async (req, res) => {
   }
   await room.update({ gamevars: JSON.stringify(game) });
 
-  // Socket.io: 房间内广播玩家加入
+  // WebSocket: 房间内广播玩家加入
   emitRoomUpdate(groomid, { game });
-  const io = getIO && getIO();
-  if (io) io.to(`room_${groomid}`).emit('message', { type: 'player_join', payload: { uid: user.uid, username: user.username } });
+  sendRoomMessage(groomid, { type: 'player_join', payload: { uid: user.uid, username: user.username } });
 
   res.json({ code: 0, msg: '加入房间成功' });
 });
@@ -161,7 +160,7 @@ router.post('/game/:groomid/action', async (req, res) => {
 
   await room.update({ gamevars: JSON.stringify(game) });
 
-  // Socket.io 推送游戏状态变化和战报
+  // WebSocket 推送游戏状态变化和战报
   emitRoomUpdate(groomid, { game });
   if (result && emitBattleResult) emitBattleResult(groomid, { result });
 

@@ -8,7 +8,7 @@
 
 - **前端**：Vue3, Element Plus, Pinia, Axios, Vite
 - **后端**：Node.js (Express)，Sequelize ORM，MySQL 8+
-- **实时通信**：Socket.io
+- **实时通信**：WebSocket
 - **认证安全**：JWT，bcrypt
 - **开发环境**：Docker（可选），PM2
 
