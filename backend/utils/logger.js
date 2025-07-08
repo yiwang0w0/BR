@@ -1,6 +1,6 @@
 const Log = require('../models/Log');
 const News = require('../models/News');
-const { broadcast } = require('./wsServer');
+const { broadcast } = require('./socket');
 
 async function logSave(uid, type, text) {
   await Log.create({
