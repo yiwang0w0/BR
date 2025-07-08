@@ -5,6 +5,7 @@ const History = require('../models/History');
 const config = require('../config/gameConfig');
 const npc = require('./npc');
 const logger = require('./logger');
+const mapUtil = require('./map');
 // 可选：引入 WebSocket 广播能力
 const { emitBattleResult } = require('./socket');
 
@@ -21,7 +22,7 @@ async function createRoom(gametype = 1) {
   const blocked = [];
   const gamevars = {
     players: {},
-    map: [],
+    map: mapUtil.initMap(),
     log: [],
     turn: 0,
     mapSize,

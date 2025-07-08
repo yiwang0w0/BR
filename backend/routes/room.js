@@ -7,6 +7,7 @@ const User = require('../models/User');
 const npc = require('../utils/npc');
 const events = require('../utils/events');
 const logger = require('../utils/logger');
+const mapUtil = require('../utils/map');
 const { checkGameOverAndEnd } = require('../utils/gameover');
 const { emitRoomUpdate, emitBattleResult, sendRoomMessage } = require('../utils/socket'); // WebSocket 工具
 
@@ -63,7 +64,7 @@ router.post('/rooms/:id/join', async (req, res) => {
   if (!game.players[user.uid]) {
     const team = req.body.team || 1;
     game.players[user.uid] = {
-      hp: 20, atk: 5, def: 3, pos: [0, 0], team, username: user.username,
+      hp: 20, atk: 5, def: 3, spd: 10, pos: [0, 0], team, username: user.username,
       inventory: [], status: {}, kills: 0,
     };
   }
@@ -102,7 +103,7 @@ router.post('/game/:groomid/action', async (req, res) => {
   const room = await Room.findOne({ where: { groomid } });
   if (!room) return res.json({ code: 1, msg: '房间不存在' });
 
-  const supported = ['move', 'attack', 'search'];
+  const supported = ['move', 'attack', 'search', 'itemDecision'];
   if (!supported.includes(type)) {
     return res.json({ code: 1, msg: '该操作暂未实现' });
   }
@@ -128,11 +129,68 @@ router.post('/game/:groomid/action', async (req, res) => {
     await logger.logSave(uid, 'move', `移动到(${player.pos[0]},${player.pos[1]})`);
   }
 
-  if (type === 'search') {
-    const player = game.players[uid];
-    if (!player) return res.json({ code: 1, msg: '玩家不存在' });
-    game.log.push({ time: Date.now(), uid, type: 'search', msg: `${player.username}搜索了周围` });
-  }
+    if (type === 'search') {
+      const player = game.players[uid];
+      if (!player) return res.json({ code: 1, msg: '玩家不存在' });
+      const mapId = player.pos ? player.pos[0] : 0;
+      let result = { type: 'none' };
+      const meetRate = 20 + (mapUtil.meetmanMods[mapId] || 0);
+      if (Math.random() * 100 < meetRate) {
+        const candidates = (game.npcs || []).filter(n => n.pos[0] === player.pos[0] && n.pos[1] === player.pos[1]);
+        if (candidates.length) {
+          const target = candidates[Math.floor(Math.random() * candidates.length)];
+          const playerFirst = (player.spd || 0) >= (target.spd || 0);
+          if (!playerFirst) {
+            npc.attack(target, player, game.log);
+          }
+          player.pendingNpc = target.id;
+          result = { type: 'npc', npc: { id: target.id, name: target.name, hp: target.hp, atk: target.atk, spd: target.spd }, playerFirst };
+          game.log.push({ time: Date.now(), uid, type: 'encounter', msg: `${player.username}遭遇了${target.name}` });
+        }
+      }
+      if (result.type === 'none') {
+        const itemRate = 60 + (mapUtil.itemfindMods[mapId] || 0);
+        if (Math.random() * 100 < itemRate) {
+          const item = mapUtil.drawItem(game.map, mapId);
+          if (item) {
+            player.pendingItem = { item, mapId };
+            result = { type: 'item', item };
+            game.log.push({ time: Date.now(), uid, type: 'itemfound', msg: `${player.username}发现了${item.name}` });
+          }
+        }
+      }
+      if (result.type === 'none') {
+        game.log.push({ time: Date.now(), uid, type: 'search', msg: `${player.username}搜索了一番，但什么也没发现` });
+      }
+      req.searchResult = result;
+    }
+
+    if (type === 'itemDecision') {
+      const player = game.players[uid];
+      if (!player || !player.pendingItem) return res.json({ code: 1, msg: '没有待处理物品' });
+      const { decision, replaceIndex } = params || {};
+      const { item, mapId } = player.pendingItem;
+      delete player.pendingItem;
+      if (decision === 'take') {
+        if (!player.inventory) player.inventory = [];
+        if (player.inventory.length >= 6) {
+          if (replaceIndex === undefined || replaceIndex < 0 || replaceIndex >= player.inventory.length) {
+            player.pendingItem = { item, mapId };
+            return res.json({ code: 1, msg: 'bagFull', data: { inventory: player.inventory } });
+          }
+          const dropped = player.inventory.splice(replaceIndex, 1)[0];
+          if (dropped) {
+            game.map[mapId].push(dropped);
+          }
+        }
+        player.inventory.push(item);
+        game.log.push({ time: Date.now(), uid, type: 'itemget', msg: `${player.username}获得了${item.name}` });
+      } else {
+        game.map[mapId].push(item);
+        game.log.push({ time: Date.now(), uid, type: 'itemdrop', msg: `${player.username}丢弃了${item.name}` });
+      }
+      req.searchResult = { type: 'itemDecision', result: decision };
+    }
 
   if (type === 'attack') {
     const player = game.players[uid];
@@ -177,7 +235,8 @@ router.post('/game/:groomid/action', async (req, res) => {
     data: {
       game,
       logs: game.log.slice(-30),
-      gameover: result ? result : null
+      gameover: result ? result : null,
+      searchResult: req.searchResult || null
     }
   });
 });
