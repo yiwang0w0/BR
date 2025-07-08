@@ -1,8 +1,9 @@
 <template>
   <el-card>
     <h1>欢迎来到DTS大逃杀游戏</h1>
-    <p>请选择左侧菜单，或进入房间大厅。</p>
-    <el-button type="primary" @click="$router.push('/rooms')">进入房间大厅</el-button>
+    <p v-if="auth.isLoggedIn()">请选择左侧菜单，或进入房间大厅。</p>
+    <el-button v-if="auth.isLoggedIn()" type="primary" @click="$router.push('/rooms')">进入房间大厅</el-button>
+    <p v-else>登录后可进入房间大厅。</p>
     <div v-if="!auth.isLoggedIn()" style="margin-top:20px;">
       <el-form :model="form" @submit.prevent="onSubmit" label-width="80px">
         <el-form-item label="用户名">
@@ -18,7 +19,8 @@
       </el-form>
     </div>
     <div v-else style="margin-top:20px;">
-      <el-button type="warning" @click="logout">注销</el-button>
+      <el-button type="primary" @click="joinGame">加入游戏</el-button>
+      <el-button type="warning" @click="logout" style="margin-left:10px;">注销</el-button>
     </div>
   </el-card>
 </template>
@@ -28,8 +30,10 @@ import { reactive } from 'vue'
 import http from '../utils/http'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
+import { useRouter } from 'vue-router'
 
 const auth = useAuthStore()
+const router = useRouter()
 const form = reactive({ username: '', password: '' })
 
 async function onSubmit() {
@@ -50,5 +54,25 @@ async function onSubmit() {
 function logout() {
   auth.logout()
   ElMessage.success('已注销')
+}
+
+async function joinGame() {
+  try {
+    const next = await http.get('/rooms/next')
+    if (next.data.code !== 0 || !next.data.data) {
+      ElMessage.error(next.data.msg || '未找到房间')
+      return
+    }
+    const rid = next.data.data.groomid
+    const join = await http.post(`/rooms/${rid}/join`)
+    if (join.data.code === 0) {
+      ElMessage.success('加入成功')
+      router.push(`/game-config/${rid}`)
+    } else {
+      ElMessage.error(join.data.msg || '加入失败')
+    }
+  } catch (e) {
+    ElMessage.error('网络错误')
+  }
 }
 </script>
