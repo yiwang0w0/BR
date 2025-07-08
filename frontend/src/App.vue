@@ -8,8 +8,8 @@ const auth = useAuthStore()
   <div>
     <nav style="margin-bottom:20px;">
       <RouterLink to="/" style="margin-right: 15px;">首页</RouterLink>
-      <RouterLink to="/rooms" style="margin-right: 15px;">房间大厅</RouterLink>
-      <RouterLink to="/user" style="margin-right: 15px;">个人中心</RouterLink>
+      <RouterLink v-if="auth.isLoggedIn()" to="/rooms" style="margin-right: 15px;">房间大厅</RouterLink>
+      <RouterLink v-if="auth.isLoggedIn()" to="/user" style="margin-right: 15px;">个人中心</RouterLink>
       <RouterLink to="/messages" style="margin-right: 15px;">消息</RouterLink>
       <RouterLink to="/history" style="margin-right: 15px;">历史对局</RouterLink>
     </nav>
