@@ -22,6 +22,7 @@ router.get('/rooms', async (req, res) => {
     attributes: [
       'groomid', 'gamenum', 'gametype', 'gamestate', 'validnum', 'alivenum', 'deathnum', 'groomtype', 'groomstatus', 'starttime'
     ],
+    where: { gamestate: { [Op.ne]: 2 } },
     order: [['groomid', 'ASC']]
   });
   res.json({ code: 0, msg: 'ok', data: rooms });
