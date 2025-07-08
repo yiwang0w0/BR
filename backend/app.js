@@ -1,12 +1,14 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const http = require('http');
 const sequelize = require('./models/index');
 const userRouter = require('./routes/user');
 const roomRouter = require('./routes/room');
 const messageRouter = require('./routes/message');
 const adminRouter = require('./routes/admin');
 const { scheduleRooms } = require('./utils/scheduler');
+const socket = require('./utils/socket');
 
 const app = express();
 
@@ -27,6 +29,8 @@ scheduleRooms();
 app.get('/api/ping', (req, res) => res.send('pong'));
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+const server = http.createServer(app);
+socket.init(server);
+server.listen(PORT, () => {
   console.log('API server listening on port', PORT);
 });

@@ -93,7 +93,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useAuthStore } from '../stores/auth'
+import ws from '../utils/ws'
 import { useRoute, useRouter } from 'vue-router'
 import http from '../utils/http'
 
@@ -111,8 +113,10 @@ const chatText = ref('')
 const chatLog = ref([])
 const chatVisible = ref(true)
 const uid = ref(null)
+const auth = useAuthStore()
 
 onMounted(async () => {
+  ws.connect(auth.token)
   if (!roomId) {
     const res = await http.get('/rooms')
     if (res.data.code === 0) {
@@ -133,8 +137,14 @@ onMounted(async () => {
           }
         }
       }
+      ws.joinRoom(roomId, { uid: uid.value })
+      ws.onMessage(handleMessage)
     }
   }
+})
+
+onUnmounted(() => {
+  if (roomId) ws.leaveRoom(roomId, { uid: uid.value })
 })
 
 function countdown(ts) {
@@ -174,8 +184,8 @@ function attack() { sendAction('attack') }
 
 async function sendChat() {
   if (!chatText.value) return
+  ws.sendChat(roomId, chatText.value)
   chatLog.value.push(chatText.value)
-  await sendAction('chat', { text: chatText.value })
   chatText.value = ''
 }
 
@@ -211,6 +221,24 @@ async function sendAction(type, params = {}) {
     }
   } catch (e) {
     log.value.push('请求失败')
+  }
+}
+
+function handleMessage(msg) {
+  if (msg.type === 'chat_message') {
+    chatLog.value.push(`${msg.payload.user || '玩家'}: ${msg.payload.text}`)
+  } else if (msg.type === 'room_update') {
+    const g = msg.payload.game
+    if (g && uid.value && g.players && g.players[uid.value]) {
+      hp.value = g.players[uid.value].hp
+      pos.value = g.players[uid.value].pos || pos.value
+    }
+  } else if (msg.type === 'player_join') {
+    log.value.push(`${msg.payload.username || msg.payload.uid} 加入房间`)
+  } else if (msg.type === 'player_leave') {
+    log.value.push(`${msg.payload.username || msg.payload.uid} 离开房间`)
+  } else if (msg.type === 'battle_result') {
+    alert(msg.payload.result === 'win' ? '胜利！' : '你死了')
   }
 }
 </script>

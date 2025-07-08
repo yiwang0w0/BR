@@ -5,6 +5,7 @@ const auth = require('../middlewares/auth');
 const Room = require('../models/Room');
 const npc = require('../utils/npc');
 const { endGame } = require('../utils/scheduler');
+const { emitRoomUpdate, emitBattleResult, getIO } = require('../utils/socket');
 
 router.use(auth);
 
@@ -52,6 +53,10 @@ router.post('/rooms/:id/join', async (req, res) => {
   }
   await room.update({ gamevars: JSON.stringify(game) });
 
+  emitRoomUpdate(groomid, { game });
+  const io = getIO();
+  if (io) io.to(`room_${groomid}`).emit('message', { type: 'player_join', payload: { uid: user.uid, username: user.username } });
+
   res.json({ code: 0, msg: '加入房间成功' });
 });
 
@@ -95,10 +100,14 @@ router.post('/game/:groomid/action', async (req, res) => {
     game.log.push({ time: Date.now(), uid, type: 'move', pos: [params.x, params.y] });
     npc.act(game);
     await room.update({ gamevars: JSON.stringify(game) });
+    emitRoomUpdate(groomid, { game });
     let gameover = null;
     if (game.players[uid].hp !== undefined && game.players[uid].hp <= 0) gameover = 'lose';
     if (game.npcs && game.npcs.length === 0) gameover = 'win';
-    if (gameover) await endGame(room, gameover, req.user.username);
+    if (gameover) {
+      await endGame(room, gameover, req.user.username);
+      emitBattleResult(groomid, { result: gameover });
+    }
     return res.json({ code: 0, msg: 'ok', data: { game, gameover } });
   }
 
@@ -124,7 +133,10 @@ router.post('/game/:groomid/action', async (req, res) => {
     if (player.hp <= 0) gameover = 'lose';
     if (!game.npcs.length) gameover = 'win';
 
-    if (gameover) await endGame(room, gameover, req.user.username);
+    if (gameover) {
+      await endGame(room, gameover, req.user.username);
+      emitBattleResult(groomid, { result: gameover });
+    }
     return res.json({ code: 0, msg: 'ok', data: { game, gameover } });
   }
 
