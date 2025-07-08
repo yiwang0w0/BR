@@ -19,7 +19,8 @@
       </el-form>
     </div>
     <div v-else style="margin-top:20px;">
-      <el-button type="warning" @click="logout">注销</el-button>
+      <el-button type="primary" @click="joinGame">加入游戏</el-button>
+      <el-button type="warning" @click="logout" style="margin-left:10px;">注销</el-button>
     </div>
   </el-card>
 </template>
@@ -29,8 +30,10 @@ import { reactive } from 'vue'
 import http from '../utils/http'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
+import { useRouter } from 'vue-router'
 
 const auth = useAuthStore()
+const router = useRouter()
 const form = reactive({ username: '', password: '' })
 
 async function onSubmit() {
@@ -51,5 +54,25 @@ async function onSubmit() {
 function logout() {
   auth.logout()
   ElMessage.success('已注销')
+}
+
+async function joinGame() {
+  try {
+    const next = await http.get('/rooms/next')
+    if (next.data.code !== 0 || !next.data.data) {
+      ElMessage.error(next.data.msg || '未找到房间')
+      return
+    }
+    const rid = next.data.data.groomid
+    const join = await http.post(`/rooms/${rid}/join`)
+    if (join.data.code === 0) {
+      ElMessage.success('加入成功')
+      router.push(`/game-config/${rid}`)
+    } else {
+      ElMessage.error(join.data.msg || '加入失败')
+    }
+  } catch (e) {
+    ElMessage.error('网络错误')
+  }
 }
 </script>
