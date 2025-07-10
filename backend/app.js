@@ -8,6 +8,7 @@ const roomRouter = require('./routes/room');
 const messageRouter = require('./routes/message');
 const adminRouter = require('./routes/admin');
 const logRouter = require('./routes/log');
+const historyRouter = require('./routes/history');
 const { scheduleRooms } = require('./utils/scheduler');
 const wsServer = require('./utils/socket');
 
@@ -22,6 +23,7 @@ app.use('/api', roomRouter);
 app.use('/api', messageRouter);
 app.use('/api', adminRouter);
 app.use('/api', logRouter);
+app.use('/api', historyRouter);
 
 // 数据库连接测试
 sequelize.authenticate()
