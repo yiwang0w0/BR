@@ -33,7 +33,8 @@ async function createRoom(gametype = 1) {
     mapSize,
     blocked,
     npcs,
-    mapNpcs: maps
+    mapNpcs: maps,
+    mapProps: {}
   };
   const starttime = Math.floor(Date.now() / 1000) + config.readyMin * 60;
   const room = await Room.create({
