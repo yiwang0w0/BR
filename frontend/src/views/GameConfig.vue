@@ -20,6 +20,8 @@
 <script setup>
 import { reactive, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import http from '../utils/http'
+import { ElMessage } from 'element-plus'
 
 const route = useRoute()
 const router = useRouter()
@@ -27,7 +29,19 @@ const roomId = computed(() => route.params.id)
 
 const form = reactive({ nickname: '', gender: 'm' })
 
-function startGame() {
-  router.push(`/room/${roomId.value}`)
+async function startGame() {
+  try {
+    const res = await http.post(`/game/${roomId.value}/config`, {
+      nickname: form.nickname,
+      gender: form.gender,
+    })
+    if (res.data.code === 0) {
+      router.push(`/room/${roomId.value}`)
+    } else {
+      ElMessage.error(res.data.msg || '配置失败')
+    }
+  } catch (e) {
+    ElMessage.error('网络错误')
+  }
 }
 </script>
