@@ -80,7 +80,7 @@ function checkEndConditions(game, gametype) {
     if (teams.size === 1) return { result: 'win', winner: `Team${[...teams][0]}` };
     return null;
   }
-  if (gametype === 2) {
+  if (gametype === 1 || gametype === 2) {
     if (!game.npcs || game.npcs.length === 0) {
       return { result: 'win', winner: alivePlayers.map(p => p.username).join(',') };
     }
@@ -145,7 +145,9 @@ async function endGame(room, result, winner, game = null) {
   }
 
   // --- 自动开新房间 ---
-  setTimeout(() => createRoom(), 60 * 1000);
+  if (process.env.NODE_ENV !== 'test') {
+    setTimeout(() => createRoom(), 60 * 1000);
+  }
 }
 
 // =====================
