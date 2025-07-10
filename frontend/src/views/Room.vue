@@ -79,7 +79,7 @@
       </el-card>
 
       <el-card v-if="log.length" class="mt-2">
-        <p v-for="(item, idx) in log" :key="idx">{{ item }}</p>
+        <p v-for="(item, idx) in log" :key="idx">{{ item.msg || item }}</p>
       </el-card>
     </div>
   </div>
@@ -167,6 +167,11 @@ async function loadData() {
     if (res.data.code === 0) {
       room.value = res.data.data
       if (res.data.data.inventory) inventory.value = res.data.data.inventory
+      if (res.data.data.game && Array.isArray(res.data.data.game.log)) {
+        log.value = log.value.concat(res.data.data.game.log)
+      } else if (res.data.data.gamevars && Array.isArray(res.data.data.gamevars.log)) {
+        log.value = log.value.concat(res.data.data.gamevars.log)
+      }
       const me = await http.get('/user/me')
       if (me.data.code === 0) {
         uid.value = me.data.data.uid
@@ -268,6 +273,9 @@ async function sendAction(type, params = {}) {
       log.value.push(`${type} 操作成功`)
       if (res.data.data) {
         const gameInfo = res.data.data.game || res.data.data
+        if (gameInfo.log && Array.isArray(gameInfo.log)) {
+          log.value = log.value.concat(gameInfo.log)
+        }
         if (gameInfo.players) {
           if (!uid.value) {
             const me = await http.get('/user/me')
