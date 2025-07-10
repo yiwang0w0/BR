@@ -1,3 +1,5 @@
+import { useAuthStore } from '../stores/auth'
+
 let socket
 const callbacks = []
 
@@ -15,6 +17,14 @@ export function connect(token) {
     let msg
     try { msg = JSON.parse(e.data) } catch (err) { return }
     callbacks.forEach(cb => cb(msg))
+  })
+  socket.addEventListener('close', (e) => {
+    if (e.code === 4001) {
+      const auth = useAuthStore()
+      auth.logout()
+      location.href = '/login'
+    }
+    socket = null
   })
   return socket
 }
