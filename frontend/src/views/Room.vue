@@ -184,15 +184,21 @@ async function loadData() {
           }
         }
         if (res.data.data.gamevars && res.data.data.gamevars.players && res.data.data.gamevars.players[uid.value]) {
-          hp.value = res.data.data.gamevars.players[uid.value].hp
-          if (res.data.data.gamevars.players[uid.value].pos) {
-            pos.value = res.data.data.gamevars.players[uid.value].pos
+          const p = res.data.data.gamevars.players[uid.value]
+          hp.value = p.hp
+          if (p.pos) {
+            pos.value = p.pos
           }
-          if (res.data.data.gamevars.players[uid.value].map !== undefined) {
-            currentMap.value = res.data.data.gamevars.players[uid.value].map
-          } else if (res.data.data.gamevars.players[uid.value].pos) {
-            currentMap.value = res.data.data.gamevars.players[uid.value].pos[0]
+          if (p.map !== undefined) {
+            currentMap.value = p.map
+          } else if (p.pos) {
+            currentMap.value = p.pos[0]
           }
+          if (Array.isArray(p.inventory)) {
+            inventory.value = p.inventory
+          }
+        } else {
+          ElMessage.warning('玩家未加入成功，请重新加入房间')
         }
       }
       ws.joinRoom(roomId.value, { uid: uid.value })
@@ -301,6 +307,11 @@ async function sendAction(type, params = {}) {
             } else if (p.pos) {
               currentMap.value = p.pos[0]
             }
+            if (Array.isArray(p.inventory)) {
+              inventory.value = p.inventory
+            }
+          } else {
+            ElMessage.warning('玩家未加入成功，请重新加入房间')
           }
         }
         if (res.data.data.gameover) {
