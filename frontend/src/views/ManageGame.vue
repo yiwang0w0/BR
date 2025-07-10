@@ -23,7 +23,7 @@
       <div v-if="selectedRoom" style="margin-top:20px;">
         <h3>房间 {{ selectedRoom }} 地图管理</h3>
         <el-select v-model="currentMap" placeholder="选择地图" style="width:120px;">
-          <el-option v-for="(items,id) in mapsData.map" :key="id" :label="'地图'+id" :value="id" />
+          <el-option v-for="m in mapList" :key="m.id" :label="m.name" :value="m.id" />
         </el-select>
 
         <div v-if="currentMap" style="margin-top:10px;">
@@ -88,11 +88,19 @@ const rooms = ref([])
 const endId = ref('')
 const selectedRoom = ref(0)
 const mapsData = ref({ map: {}, mapNpcs: {}, mapProps: {} })
+const mapList = ref([])
 const currentMap = ref('')
 const newItem = ref({ name: '', kind: '', effect: 0, amount: 1 })
 const newNpc = ref({ name: '', hp: 10, atk: 1 })
 const weather = ref('')
 const newBlock = ref('')
+
+async function fetchMaps() {
+  const res = await http.get('/maps')
+  if (res.data.code === 0) {
+    mapList.value = res.data.data
+  }
+}
 
 async function fetchRooms() {
   const res = await http.get('/rooms')
@@ -216,5 +224,8 @@ async function saveProps() {
 
 watch(currentMap, updateWeather)
 
-onMounted(fetchRooms)
+onMounted(() => {
+  fetchMaps()
+  fetchRooms()
+})
 </script>
