@@ -164,7 +164,7 @@ async function loadData() {
       rooms.value = res.data.data
     }
   } else {
-    const res = await http.get(`/game/${roomId.value}`)
+    let res = await http.get(`/game/${roomId.value}`)
     if (res.data.code === 0) {
       room.value = res.data.data
       if (res.data.data.inventory) inventory.value = res.data.data.inventory
@@ -180,7 +180,19 @@ async function loadData() {
           const joinRes = await http.post(`/rooms/${roomId.value}/join`)
           if (joinRes.data.code !== 0) {
             ElMessage.error(joinRes.data.msg || '加入房间失败')
+            router.push('/')
             return
+          }
+          const newGame = await http.get(`/game/${roomId.value}`)
+          if (newGame.data.code === 0) {
+            room.value = newGame.data.data
+            res = newGame
+            if (newGame.data.data.inventory) inventory.value = newGame.data.data.inventory
+            if (newGame.data.data.game && Array.isArray(newGame.data.data.game.log)) {
+              log.value = log.value.concat(newGame.data.data.game.log)
+            } else if (newGame.data.data.gamevars && Array.isArray(newGame.data.data.gamevars.log)) {
+              log.value = log.value.concat(newGame.data.data.gamevars.log)
+            }
           }
         }
         if (res.data.data.gamevars && res.data.data.gamevars.players && res.data.data.gamevars.players[uid.value]) {
