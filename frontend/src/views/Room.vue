@@ -48,7 +48,7 @@
           <el-button class="ml-1" size="small" type="primary" @click="moveToMap">移动</el-button>
         </div>
         <div>
-          <el-button size="small" type="danger" @click="attack">攻击</el-button>
+          <el-button v-if="currentTarget" size="small" type="danger" @click="attackCurrentTarget">攻击</el-button>
           <el-button size="small" type="primary" @click="search">搜索</el-button>
         </div>
       </div>
@@ -108,6 +108,7 @@ const chatLog = ref([])
 const chatVisible = ref(true)
 const uid = ref(null)
 const searchResult = ref(null)
+const currentTarget = ref(null)
 
 const auth = useAuthStore()
 
@@ -242,6 +243,16 @@ function attack(npcId) {
   sendAction('attack', { npcId })
 }
 
+function attackCurrentTarget() {
+  if (!currentTarget.value) return
+  if (currentTarget.value.type === 'npc') {
+    attack(currentTarget.value.npc.id)
+  } else if (currentTarget.value.type === 'player') {
+    sendAction('attack', { playerId: currentTarget.value.player.id })
+  }
+  currentTarget.value = null
+}
+
 async function search() {
   const res = await sendAction('search')
   if (res && res.data.data && res.data.data.searchResult) {
@@ -300,8 +311,12 @@ async function sendAction(type, params = {}) {
 }
 
 function handleSearchResult(r) {
-  if (!r) return
+  if (!r) {
+    currentTarget.value = null
+    return
+  }
   if (r.type === 'item') {
+    currentTarget.value = null
     ElMessageBox.confirm(`发现 ${r.item.name}，是否拾取？`, '发现物品', {
       confirmButtonText: '拾取',
       cancelButtonText: '丢弃'
@@ -320,6 +335,7 @@ function handleSearchResult(r) {
       sendAction('itemDecision', { decision: 'drop' })
     })
   } else if (r.type === 'npc') {
+    currentTarget.value = r
     const tip = r.playerFirst ? '遭遇 ' + r.npc.name + '，是否攻击？'
       : '被 ' + r.npc.name + ' 先制攻击，是否反击？'
     ElMessageBox.confirm(tip, '遭遇敌人', {
@@ -328,6 +344,17 @@ function handleSearchResult(r) {
     }).then(() => {
       attack(r.npc.id)
     })
+  } else if (r.type === 'player') {
+    currentTarget.value = r
+    ElMessageBox.confirm(`遭遇玩家 ${r.player.name}，是否攻击？`, '遭遇玩家', {
+      confirmButtonText: '攻击',
+      cancelButtonText: '离开'
+    }).then(() => {
+      sendAction('attack', { playerId: r.player.id })
+    })
+  }
+  else {
+    currentTarget.value = null
   }
 }
 
