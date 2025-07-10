@@ -1,11 +1,20 @@
 const { Server } = require('ws');
+const { parse } = require('url');
+const auth = require('../middlewares/auth');
 
 let wss;
 const rooms = new Map();
 
 function init(server) {
   wss = new Server({ server, path: '/ws' });
-  wss.on('connection', ws => {
+  wss.on('connection', (ws, req) => {
+    const { query } = parse(req.url, true);
+    try {
+      ws.user = auth.verifyToken(query.token || '');
+    } catch (e) {
+      ws.close(4001, 'unauthorized');
+      return;
+    }
     ws.rooms = new Set();
     ws.on('message', data => {
       let msg;
