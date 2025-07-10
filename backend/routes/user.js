@@ -77,7 +77,14 @@ router.post('/refresh', async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '15m' }
     );
-    res.json({ code: 0, msg: 'ok', accessToken });
+    await tokenStore.remove(refreshToken);
+    const newRefreshToken = jwt.sign(
+      { uid: payload.uid, username },
+      process.env.REFRESH_SECRET,
+      { expiresIn: '7d' }
+    );
+    await tokenStore.add(newRefreshToken);
+    res.json({ code: 0, msg: 'ok', accessToken, refreshToken: newRefreshToken });
   } catch (err) {
     res.status(403).json({ code: 1, msg: 'refresh token 无效' });
   }
