@@ -39,5 +39,6 @@ function startGame() {
       }
     })
     .catch(() => ElMessage.error('网络错误'))
+
 }
 </script>
