@@ -116,6 +116,7 @@ router.put('/user/me', auth, async (req, res) => {
     gender: gender ?? user.gender,
     killmsg: killmsg ?? user.killmsg,
     lastword: lastword ?? user.lastword,
+    configured: 1,
   });
   res.json({ code: 0, msg: '更新成功' });
 });

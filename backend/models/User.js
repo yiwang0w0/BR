@@ -10,6 +10,7 @@ const User = sequelize.define('bra_users', {
   ip: { type: DataTypes.STRING(15), allowNull: false, defaultValue: '' },
   groupid: { type: DataTypes.TINYINT.UNSIGNED, allowNull: false, defaultValue: 0 },
   roomid: { type: DataTypes.TINYINT.UNSIGNED, allowNull: false, defaultValue: 0 },
+  configured: { type: DataTypes.TINYINT.UNSIGNED, allowNull: false, defaultValue: 0 },
   gender: { type: DataTypes.STRING(1), allowNull: false, defaultValue: '0' },
   motto: { type: DataTypes.STRING(30), allowNull: false, defaultValue: '' },
   killmsg: { type: DataTypes.STRING(30), allowNull: false, defaultValue: '' },
