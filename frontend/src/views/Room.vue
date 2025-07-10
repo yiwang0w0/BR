@@ -40,7 +40,7 @@
       <p v-else>加载中...</p>
 
       <div v-if="room" class="actions" style="margin-top: 1rem;">
-        <p>当前位置：{{ pos[0] }}, {{ pos[1] }} HP: {{ hp }}</p>
+        <p>当前位置：{{ mapName }} HP: {{ hp }}</p>
         <div class="mb-2">
           <el-select v-model="selectedMap" placeholder="选择目标地图" size="small" style="width: 200px;">
             <el-option v-for="m in maps" :key="m.id" :label="m.name" :value="m.id" />
@@ -149,6 +149,11 @@ const maps = [
   { id: 34, name: '英灵殿' },
 ]
 const selectedMap = ref(null)
+const currentMap = ref(0)
+const mapName = computed(() => {
+  const m = maps.find(m => m.id === currentMap.value)
+  return m ? m.name : ''
+})
 
 async function loadData() {
   ws.connect(auth.token)
@@ -176,6 +181,11 @@ async function loadData() {
           hp.value = res.data.data.gamevars.players[uid.value].hp
           if (res.data.data.gamevars.players[uid.value].pos) {
             pos.value = res.data.data.gamevars.players[uid.value].pos
+          }
+          if (res.data.data.gamevars.players[uid.value].map !== undefined) {
+            currentMap.value = res.data.data.gamevars.players[uid.value].map
+          } else if (res.data.data.gamevars.players[uid.value].pos) {
+            currentMap.value = res.data.data.gamevars.players[uid.value].pos[0]
           }
         }
       }
@@ -214,6 +224,14 @@ async function move(dx, dy) {
   const ny = y + dy
   await sendAction('move', { x: nx, y: ny })
 
+}
+
+async function moveToMap() {
+  if (selectedMap.value !== null) {
+    await sendAction('move', { map: selectedMap.value })
+    pos.value = [selectedMap.value, 0]
+    currentMap.value = selectedMap.value
+  }
 }
 
 async function useItem(item) {
@@ -259,6 +277,11 @@ async function sendAction(type, params = {}) {
           if (p) {
             hp.value = p.hp
             pos.value = p.pos
+            if (p.map !== undefined) {
+              currentMap.value = p.map
+            } else if (p.pos) {
+              currentMap.value = p.pos[0]
+            }
           }
         }
         if (res.data.data.gameover) {
@@ -316,6 +339,11 @@ function handleMessage(msg) {
     if (g && uid.value && g.players && g.players[uid.value]) {
       hp.value = g.players[uid.value].hp
       pos.value = g.players[uid.value].pos || pos.value
+      if (g.players[uid.value].map !== undefined) {
+        currentMap.value = g.players[uid.value].map
+      } else if (g.players[uid.value].pos) {
+        currentMap.value = g.players[uid.value].pos[0]
+      }
     }
   } else if (msg.type === 'player_join') {
     log.value.push(`${msg.payload.username || msg.payload.uid} 加入房间`)
