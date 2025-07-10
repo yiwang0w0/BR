@@ -142,7 +142,8 @@ router.post('/game/:groomid/config', async (req, res) => {
   await user.update({
     username: nickname ?? user.username,
     gender: gender ?? user.gender,
-    roomid: groomid
+    roomid: groomid,
+    configured: 1
   });
 
   let game = {};
