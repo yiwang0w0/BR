@@ -8,17 +8,24 @@ router.use(auth);
 
 // 获取历史对局列表，可按 winner、gametype 等参数筛选
 router.get('/history', async (req, res) => {
-  const { winner, gametype, limit = 20 } = req.query;
+  let { page = 1, pageSize = 10, winner, gametype } = req.query;
+  page = parseInt(page) || 1;
+  pageSize = parseInt(pageSize) || 10;
+  page = page > 0 ? page : 1;
+  pageSize = pageSize > 0 ? pageSize : 10;
+
   const where = {};
   if (winner) where.winner = winner;
   if (gametype) where.gametype = Number(gametype);
+
   try {
-    const list = await History.findAll({
+    const { count, rows } = await History.findAndCountAll({
       where,
       order: [['gid', 'DESC']],
-      limit: Number(limit) > 0 ? Number(limit) : 20
+      limit: pageSize,
+      offset: (page - 1) * pageSize
     });
-    res.json({ code: 0, msg: 'ok', data: list });
+    res.json({ code: 0, msg: 'ok', data: { list: rows, total: count } });
   } catch (e) {
     console.error(e);
     res.status(500).json({ code: 1, msg: '服务器错误' });
