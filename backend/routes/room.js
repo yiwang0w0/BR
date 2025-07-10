@@ -217,8 +217,8 @@ router.post('/game/:groomid/action', async (req, res) => {
     const player = game.players[uid];
     if (!player) return res.json({ code: 1, msg: '未加入房间' });
     player.pos = [params.x, params.y];
-    const mapId = params.map !== undefined ? params.map : params.x;
-    player.map = mapId;
+    const mapId = params.map !== undefined ? params.map : player.map;
+    if (mapId !== undefined) player.map = mapId;
 
     // 触发地图事件等
     const moveEvents = events.onPlayerMove(player, game, room) || [];
