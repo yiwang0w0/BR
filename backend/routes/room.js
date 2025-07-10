@@ -100,6 +100,9 @@ router.post('/rooms/:id/join', async (req, res) => {
   emitRoomUpdate(groomid, { game });
   sendRoomMessage(groomid, { type: 'player_join', payload: { uid: user.uid, username: user.username } });
 
+  // 再次写入用户房间号，确保数据库保持最新状态
+  await user.update({ roomid: groomid });
+
   res.json({ code: 0, msg: '加入房间成功' });
 });
 
@@ -154,6 +157,9 @@ router.post('/game/:groomid/config', async (req, res) => {
 
   emitRoomUpdate(groomid, { game });
 
+  // 重新写入房间号，确保数据库记录与房间一致
+  await user.update({ roomid: groomid });
+
   res.json({ code: 0, msg: '配置成功' });
 });
 
@@ -169,8 +175,15 @@ router.post('/game/:groomid/action', async (req, res) => {
 
   const user = await User.findByPk(uid);
   if (!user) return res.status(404).json({ code: 1, msg: '用户不存在' });
+  let game = {};
+  try { game = JSON.parse(room.gamevars || '{}'); } catch (e) {}
+
   if (parseInt(user.roomid) !== parseInt(groomid)) {
-    return res.json({ code: 1, msg: '未在当前房间' });
+    if (game.players && game.players[uid]) {
+      await user.update({ roomid: groomid });
+    } else {
+      return res.json({ code: 1, msg: '未在当前房间' });
+    }
   }
 
   const supported = ['move', 'attack', 'search', 'itemDecision'];
@@ -178,8 +191,6 @@ router.post('/game/:groomid/action', async (req, res) => {
     return res.json({ code: 1, msg: '该操作暂未实现' });
   }
 
-  let game = {};
-  try { game = JSON.parse(room.gamevars || '{}'); } catch (e) {}
   if (!game.players) game.players = {};
   if (!game.log) game.log = [];
 
