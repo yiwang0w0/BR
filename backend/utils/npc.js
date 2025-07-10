@@ -122,8 +122,8 @@ function act(game) {
         game.mapNpcs[npc.map].push(npc);
       }
 
-      // NPC 搜索当前地点道具
-      const mapId = npc.pos[0] * mapSize + npc.pos[1];
+      // NPC 搜索当前地图道具
+      const mapId = npc.map;
       const got = drawItem(game.map, mapId);
       if (got) {
         if (!npc.inventory) npc.inventory = [];
