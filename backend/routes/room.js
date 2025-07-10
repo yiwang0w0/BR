@@ -30,6 +30,14 @@ router.get('/rooms', async (req, res) => {
 });
 
 /**
+ * 获取地图基本信息（id 与名称）
+ */
+router.get('/maps', async (req, res) => {
+  const mapInfo = require('../data/mapinfo.json');
+  res.json({ code: 0, msg: 'ok', data: mapInfo });
+});
+
+/**
  * 获取最近的可加入房间
  */
 router.get('/rooms/next', async (req, res) => {
