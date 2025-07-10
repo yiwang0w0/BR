@@ -81,8 +81,17 @@ router.post('/rooms/:id/join', async (req, res) => {
   if (!game.players[user.uid]) {
     const team = (req.body && req.body.team) || 1;
     game.players[user.uid] = {
-      hp: 20, atk: 5, def: 3, spd: 10, pos: [0, 0], team, username: user.username,
-      inventory: [], status: {}, kills: 0,
+      hp: 20,
+      atk: 5,
+      def: 3,
+      spd: 10,
+      pos: [0, 0],
+      map: 0,
+      team,
+      username: user.username,
+      inventory: [],
+      status: {},
+      kills: 0,
     };
   }
   await room.update({ gamevars: JSON.stringify(game) });
@@ -149,6 +158,8 @@ router.post('/game/:groomid/action', async (req, res) => {
     const player = game.players[uid];
     if (!player) return res.json({ code: 1, msg: '未加入房间' });
     player.pos = [params.x, params.y];
+    const mapId = params.map !== undefined ? params.map : params.x;
+    player.map = mapId;
 
     // 触发地图事件等
     const moveEvents = events.onPlayerMove(player, game, room) || [];
@@ -163,11 +174,11 @@ router.post('/game/:groomid/action', async (req, res) => {
     if (type === 'search') {
       const player = game.players[uid];
     if (!player) return res.json({ code: 1, msg: '未加入房间' });
-      const mapId = player.pos ? player.pos[0] : 0;
+      const mapId = player.map !== undefined ? player.map : (player.pos ? player.pos[0] : 0);
       let result = { type: 'none' };
       const meetRate = 20 + (mapUtil.meetmanMods[mapId] || 0);
       if (Math.random() * 100 < meetRate) {
-        const candidates = (game.npcs || []).filter(n => n.pos[0] === player.pos[0] && n.pos[1] === player.pos[1]);
+        const candidates = (game.npcs || []).filter(n => n.map === mapId);
         if (candidates.length) {
           const target = candidates[Math.floor(Math.random() * candidates.length)];
           const playerFirst = (player.spd || 0) >= (target.spd || 0);
