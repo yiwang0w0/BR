@@ -87,7 +87,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
-import { ElMessageBox } from 'element-plus'
+import { ElMessageBox, ElMessage } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
 import ws from '../utils/ws'
 import { useRoute, useRouter } from 'vue-router'
@@ -165,6 +165,13 @@ async function loadData() {
       const me = await http.get('/user/me')
       if (me.data.code === 0) {
         uid.value = me.data.data.uid
+        if (me.data.data.roomid != Number(roomId.value)) {
+          const joinRes = await http.post(`/rooms/${roomId.value}/join`)
+          if (joinRes.data.code !== 0) {
+            ElMessage.error(joinRes.data.msg || '加入房间失败')
+            return
+          }
+        }
         if (res.data.data.gamevars && res.data.data.gamevars.players && res.data.data.gamevars.players[uid.value]) {
           hp.value = res.data.data.gamevars.players[uid.value].hp
           if (res.data.data.gamevars.players[uid.value].pos) {
