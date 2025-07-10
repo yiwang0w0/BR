@@ -61,7 +61,7 @@
 ```bash
 cd backend
 npm install
-cp .env.example .env   # 并配置你的数据库账号
+cp .env.example .env   # 根据实际情况修改数据库和游戏设置
 npm run dev
 ```
 
@@ -113,7 +113,7 @@ npm run dev
 
 ## 开发建议
 
-- 本仓库不包含 `.env`，请在 `backend` 目录中复制 `.env.example` 为 `.env` 并根据需要配置数据库连接。
+- 本仓库不包含 `.env`，请在 `backend` 目录中复制 `.env.example` 为 `.env`，并按需调整数据库账号、JWT 密钥及房间启动参数。
 - 推荐配合 PM2 生产部署，支持 Docker 一键启动（后续补充 docker-compose.yaml）。
 - 前端对接后端 API，接口文档见 [AGENTS.md](AGENTS.md)。
 
