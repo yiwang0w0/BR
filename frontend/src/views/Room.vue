@@ -183,15 +183,23 @@ async function loadData() {
             router.push('/')
             return
           }
-          const newGame = await http.get(`/game/${roomId.value}`)
-          if (newGame.data.code === 0) {
-            room.value = newGame.data.data
-            res = newGame
-            if (newGame.data.data.inventory) inventory.value = newGame.data.data.inventory
-            if (newGame.data.data.game && Array.isArray(newGame.data.data.game.log)) {
-              log.value = log.value.concat(newGame.data.data.game.log)
-            } else if (newGame.data.data.gamevars && Array.isArray(newGame.data.data.gamevars.log)) {
-              log.value = log.value.concat(newGame.data.data.gamevars.log)
+          if (joinRes.data.data && joinRes.data.data.player) {
+            const p = joinRes.data.data.player
+            hp.value = p.hp
+            pos.value = p.pos || pos.value
+            if (p.map !== undefined) {
+              currentMap.value = p.map
+            } else if (p.pos) {
+              currentMap.value = p.pos[0]
+            }
+            if (Array.isArray(p.inventory)) {
+              inventory.value = p.inventory
+            }
+            if (room.value && room.value.gamevars && room.value.gamevars.players) {
+              room.value.gamevars.players[uid.value] = p
+            }
+            if (res.data.data && res.data.data.gamevars && res.data.data.gamevars.players) {
+              res.data.data.gamevars.players[uid.value] = p
             }
           }
         }

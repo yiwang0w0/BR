@@ -95,6 +95,7 @@ router.post('/rooms/:id/join', async (req, res) => {
     };
   }
   await room.update({ gamevars: JSON.stringify(game) });
+  await room.reload();
 
   // WebSocket: 房间内广播玩家加入
   emitRoomUpdate(groomid, { game });
@@ -103,7 +104,7 @@ router.post('/rooms/:id/join', async (req, res) => {
   // 再次写入用户房间号，确保数据库保持最新状态
   await user.update({ roomid: groomid });
 
-  res.json({ code: 0, msg: '加入房间成功' });
+  res.json({ code: 0, msg: '加入房间成功', data: { player: game.players[user.uid] } });
 });
 
 /**
