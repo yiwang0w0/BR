@@ -55,38 +55,46 @@ function logout() {
   ElMessage.success('已注销')
 }
 
-async function joinGame() {
-  try {
-    let rid
-    const next = await http.get('/rooms/next')
-    if (next.data.code !== 0 || !next.data.data) {
-      const created = await http.post('/rooms')
-      if (created.data.code !== 0 || !created.data.data) {
-        ElMessage.error(created.data.msg || '创建房间失败')
-        return
+  async function joinGame() {
+    try {
+      let rid
+      const next = await http.get('/rooms/next')
+      if (next.data.code !== 0 || !next.data.data) {
+        const created = await http.post('/rooms')
+        if (created.data.code !== 0 || !created.data.data) {
+          ElMessage.closeAll()
+          ElMessage.error(created.data.msg || '创建房间失败')
+          return
+        }
+        rid = created.data.data.groomid
+      } else {
+        rid = next.data.data.groomid
       }
-      rid = created.data.data.groomid
-    } else {
-      rid = next.data.data.groomid
-    }
-    const join = await http.post(`/rooms/${rid}/join`)
-    if (join.data.code === 0) {
-      ElMessage.success('加入成功')
-      const me = await http.get('/user/me')
-      if (me.data.code === 0 && me.data.data) {
-        if (me.data.data.configured === 0) {
-          router.push(`/game-config/${rid}`)
+
+      const join = await http.post(`/rooms/${rid}/join`)
+      if (join.data.code === 0) {
+        ElMessage.closeAll()
+        ElMessage.success('加入成功')
+        const me = await http.get('/user/me')
+        if (me.data.code === 0 && me.data.data) {
+          const { roomid, configured } = me.data.data
+          router.push(configured === 0 ? `/game-config/${roomid}` : `/room/${roomid}`)
         } else {
-          router.push(`/room/${rid}`)
+          router.push(`/game-config/${rid}`)
+        }
+      } else if (join.data.msg === '已在房间中') {
+        const me = await http.get('/user/me')
+        if (me.data.code === 0 && me.data.data) {
+          const { roomid, configured } = me.data.data
+          router.push(configured === 0 ? `/game-config/${roomid}` : `/room/${roomid}`)
         }
       } else {
-        router.push(`/game-config/${rid}`)
+        ElMessage.closeAll()
+        ElMessage.error(join.data.msg || '加入失败')
       }
-    } else {
-      ElMessage.error(join.data.msg || '加入失败')
+    } catch (e) {
+      ElMessage.closeAll()
+      ElMessage.error('网络错误')
     }
-  } catch (e) {
-    ElMessage.error('网络错误')
   }
-}
 </script>
