@@ -29,19 +29,16 @@ const roomId = computed(() => route.params.id)
 
 const form = reactive({ nickname: '', gender: 'm' })
 
-async function startGame() {
-  try {
-    const res = await http.post(`/game/${roomId.value}/config`, {
-      nickname: form.nickname,
-      gender: form.gender,
+function startGame() {
+  http.post(`/game/${roomId.value}/config`, form)
+    .then(res => {
+      if (res.data.code === 0) {
+        router.push(`/room/${roomId.value}`)
+      } else {
+        ElMessage.error(res.data.msg || '配置失败')
+      }
     })
-    if (res.data.code === 0) {
-      router.push(`/room/${roomId.value}`)
-    } else {
-      ElMessage.error(res.data.msg || '配置失败')
-    }
-  } catch (e) {
-    ElMessage.error('网络错误')
-  }
+    .catch(() => ElMessage.error('网络错误'))
+
 }
 </script>
