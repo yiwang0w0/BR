@@ -94,33 +94,10 @@ function attack(npc, player, log) {
 
 function act(game) {
   if (!game.mapNpcs) return;
-  const mapSize = game.mapSize || 10;
-  const blocked = game.blocked || [];
   if (!game.log) game.log = [];
-  for (const [mapId, list] of Object.entries(game.mapNpcs)) {
-    for (const npc of list.slice()) {
+  for (const list of Object.values(game.mapNpcs)) {
+    for (const npc of list) {
       if (!npc.alive) continue;
-      const players = Object.values(game.players || {}).filter(p => p.hp > 0);
-      if (players.length === 0) break;
-      // 寻找最近的玩家
-      players.sort((a, b) => distance(npc.pos, a.pos) - distance(npc.pos, b.pos));
-      const target = players[0];
-      const oldMap = npc.map;
-      if (distance(npc.pos, target.pos) === 0) {
-        attack(npc, target, game.log);
-      } else {
-        moveNpc(npc, target.pos, mapSize, blocked);
-        game.log.push({ time: Date.now(), type: 'npcMove', npc: npc.id, pos: [...npc.pos] });
-        if (distance(npc.pos, target.pos) === 0) {
-          attack(npc, target, game.log);
-        }
-      }
-      if (npc.map !== oldMap) {
-        const idx = game.mapNpcs[oldMap].indexOf(npc);
-        if (idx >= 0) game.mapNpcs[oldMap].splice(idx, 1);
-        if (!game.mapNpcs[npc.map]) game.mapNpcs[npc.map] = [];
-        game.mapNpcs[npc.map].push(npc);
-      }
 
       // NPC 搜索当前地图道具
       const mapId = npc.map;
