@@ -72,7 +72,16 @@ async function joinGame() {
     const join = await http.post(`/rooms/${rid}/join`)
     if (join.data.code === 0) {
       ElMessage.success('加入成功')
-      router.push(`/game-config/${rid}`)
+      const me = await http.get('/user/me')
+      if (me.data.code === 0 && me.data.data) {
+        if (me.data.data.configured === 0) {
+          router.push(`/game-config/${rid}`)
+        } else {
+          router.push(`/room/${rid}`)
+        }
+      } else {
+        router.push(`/game-config/${rid}`)
+      }
     } else {
       ElMessage.error(join.data.msg || '加入失败')
     }
