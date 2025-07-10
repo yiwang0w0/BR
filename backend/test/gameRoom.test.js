@@ -40,6 +40,21 @@ describe('房间与NPC相关逻辑', function() {
     expect(game.npcs).to.have.length.above(0);
   });
 
+  it('玩家加入后应写入gamevars且初始hp为20', async function() {
+    const user = await User.create({ username: 'joiner', password: 'x' });
+    const token = jwt.sign({ uid: user.uid, username: user.username }, process.env.JWT_SECRET);
+    const room = await createRoom();
+    await request(app)
+      .post(`/rooms/${room.groomid}/join`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    const record = await Room.findByPk(room.groomid);
+    const game = JSON.parse(record.gamevars);
+    expect(game.players[user.uid]).to.exist;
+    expect(game.players[user.uid].hp).to.equal(20);
+  });
+
   it('玩家移动后NPC会行动并造成伤害与日志记录', async function() {
     const user = await User.create({ username: 'p1', password: 'h' });
     const token = jwt.sign({ uid: user.uid, username: user.username }, process.env.JWT_SECRET);
