@@ -67,6 +67,7 @@ npm run dev
 
 后端 API 默认运行于 `http://localhost:3000`
 
+or node app.js
 ### 3. 启动前端
 
 ```bash
