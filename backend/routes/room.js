@@ -120,6 +120,44 @@ router.get('/game/:groomid', async (req, res) => {
 });
 
 /**
+ * 配置玩家信息（昵称、性别等）
+ */
+router.post('/game/:groomid/config', async (req, res) => {
+  const { groomid } = req.params;
+  const { nickname, gender } = req.body || {};
+  const uid = req.user.uid;
+
+  const room = await Room.findOne({ where: { groomid } });
+  if (!room) return res.json({ code: 1, msg: '房间不存在' });
+
+  const user = await User.findByPk(uid);
+  if (!user) return res.status(404).json({ code: 1, msg: '用户不存在' });
+  if (parseInt(user.roomid) !== parseInt(groomid)) {
+    return res.json({ code: 1, msg: '未在当前房间' });
+  }
+
+  await user.update({
+    username: nickname ?? user.username,
+    gender: gender ?? user.gender,
+    roomid: groomid
+  });
+
+  let game = {};
+  try { game = JSON.parse(room.gamevars || '{}'); } catch (e) {}
+  if (!game.players) game.players = {};
+  if (game.players[uid]) {
+    if (nickname) game.players[uid].username = nickname;
+    if (gender) game.players[uid].gender = gender;
+  }
+
+  await room.update({ gamevars: JSON.stringify(game) });
+
+  emitRoomUpdate(groomid, { game });
+
+  res.json({ code: 0, msg: '配置成功' });
+});
+
+/**
  * 游戏主操作
  */
 router.post('/game/:groomid/action', async (req, res) => {
