@@ -218,7 +218,28 @@ async function loadData() {
             inventory.value = p.inventory
           }
         } else {
-          ElMessage.warning('玩家未加入成功，请重新加入房间')
+          const retry = await http.post(`/rooms/${roomId.value}/join`)
+          if (retry.data.code === 0 && retry.data.data && retry.data.data.player) {
+            const p = retry.data.data.player
+            hp.value = p.hp
+            pos.value = p.pos || pos.value
+            if (p.map !== undefined) {
+              currentMap.value = p.map
+            } else if (p.pos) {
+              currentMap.value = p.pos[0]
+            }
+            if (Array.isArray(p.inventory)) {
+              inventory.value = p.inventory
+            }
+            if (room.value && room.value.gamevars && room.value.gamevars.players) {
+              room.value.gamevars.players[uid.value] = p
+            }
+            if (res.data.data && res.data.data.gamevars && res.data.data.gamevars.players) {
+              res.data.data.gamevars.players[uid.value] = p
+            }
+          } else {
+            ElMessage.warning('玩家未加入成功，请重新加入房间')
+          }
         }
       }
       ws.joinRoom(roomId.value, { uid: uid.value })
@@ -318,7 +339,17 @@ async function sendAction(type, params = {}) {
             const me = await http.get('/user/me')
             if (me.data.code === 0) uid.value = me.data.data.uid
           }
-          const p = gameInfo.players[uid.value]
+          let p = gameInfo.players[uid.value]
+          if (!p) {
+            const retry = await http.post(`/rooms/${roomId.value}/join`)
+            if (retry.data.code === 0 && retry.data.data && retry.data.data.player) {
+              p = retry.data.data.player
+              gameInfo.players[uid.value] = p
+              if (room.value && room.value.gamevars && room.value.gamevars.players) {
+                room.value.gamevars.players[uid.value] = p
+              }
+            }
+          }
           if (p) {
             hp.value = p.hp
             pos.value = p.pos
