@@ -72,8 +72,8 @@ const winRate = computed(() => {
 // ========== 拉取用户信息 ==========
 async function fetchUser() {
   try {
-    // -------- 推荐接口 /api/user/me --------
-    const res = await http.get('/api/user/me')
+  // -------- 推荐接口 /user/me --------
+  const res = await http.get('/user/me')
     if(res.data.code === 0){
       user.value = res.data.data
       // 用用户数据初始化表单
@@ -96,10 +96,10 @@ async function fetchUser() {
 // ========== 保存修改 ==========
 async function onSave() {
   try {
-    // 发送 PUT /api/user/me，更新可编辑信息
+    // 发送 PUT /user/me，更新可编辑信息
     const payload = { ...editForm }
     delete payload.username // 用户名不可改，防止误传
-    const res = await http.put('/api/user/me', payload)
+    const res = await http.put('/user/me', payload)
     if(res.data.code === 0){
       ElMessage.success('更新成功')
       await fetchUser() // 保存后刷新
@@ -121,7 +121,7 @@ function goManage() {
 onMounted(fetchUser)
 
 /* =================== 重要注意事项 ===================
-1. 推荐API路径为 /api/user/me，和AGENTS.md文档一致。
+1. axios 已设定 baseURL，因此调用时省略 /api 前缀，如 /user/me。
 2. 字段名需和后端表结构一致，如 username、gender、motto、killmsg、lastword。
 3. 性别建议后端用 'M'/'F'/'0'(保密)，表单选项与后端保持同步。
 4. 用户名只读，前端不传username更新，防止越权。
