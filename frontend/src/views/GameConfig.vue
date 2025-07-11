@@ -42,15 +42,10 @@ const form = reactive({
 
 // 核心函数：发起游戏配置请求
 function startGame() {
-  // --------【注意1：后端API路径和payload结构需确认】--------
-  // 推荐写法：与 AGENTS.md 及后端约定一致，配置行为统一走 action 接口
-  // 如后端未实现 /game/:groomid/config，应改用 /api/game/:groomid/action，并传 type: 'config'
-  http.post(`/api/game/${roomId.value}/action`, {
-    type: 'config',  // 标明是配置信息
-    params: {
-      username: form.nickname,  // 建议后端和前端统一用 username 字段
-      gender: form.gender
-    }
+  // 发送至房间配置接口，字段与后端保持一致
+  http.post(`/game/${roomId.value}/config`, {
+    nickname: form.nickname,
+    gender: form.gender
   })
     .then(res => {
       // --------【注意2：code判断，msg友好提示】--------
@@ -67,8 +62,8 @@ function startGame() {
 
 /* ============ 重要注意事项汇总 ============
 
-1. 与后端接口协定：务必确认配置接口路径，推荐 /api/game/:groomid/action + type/config 格式，避免和文档或实现脱节。
-2. 字段命名要统一：如后端表为 username，前端form请同步用 username，不要用 nickname。后端如兼容 nickname 也建议统一为 username。
+1. 与后端接口协定：当前实现采用 /game/:groomid/config 路径，字段为 nickname、gender，请与后端保持一致。
+2. 字段命名要统一：如后端表为 nickname，前端需同步使用 nickname，与后端保持一致。
 3. 表单校验：本例通过按钮 disabled 简单校验；如需更严谨可用 el-form 验证。
 4. UI友好性：接口返回失败时应有明确提示。
 5. 业务流畅性：配置成功后自动跳转房间，体验顺滑。
