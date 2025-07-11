@@ -88,7 +88,12 @@ function checkEndConditions(game, gametype) {
     return null;
   }
   // 个人乱斗
-  if (alivePlayers.length === 1) return { result: 'win', winner: alivePlayers[0].username };
+  if (alivePlayers.length === 1) {
+    if (!game.npcs || game.npcs.length === 0) {
+      return { result: 'win', winner: alivePlayers[0].username };
+    }
+    return null;
+  }
   if (alivePlayers.length === 0) return { result: 'lose' };
   return null;
 }

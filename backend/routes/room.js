@@ -216,12 +216,14 @@ router.post('/game/:groomid/action', async (req, res) => {
   if (type === 'move') {
     const player = game.players[uid];
     if (!player) return res.json({ code: 1, msg: '未加入房间' });
+    const oldPos = player.pos ? [...player.pos] : [0, 0];
+    const oldMap = player.map;
     player.pos = [params.x, params.y];
     const mapId = params.map !== undefined ? params.map : params.x;
     player.map = mapId;
 
     // 触发地图事件等
-    const moveEvents = events.onPlayerMove(player, game, room) || [];
+    const moveEvents = events.onPlayerMove(player, game, room, oldPos, oldMap) || [];
     game.log.push(...moveEvents);
 
     events.resolveStatus(player, game, room, game.log);
