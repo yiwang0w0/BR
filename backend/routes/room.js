@@ -194,6 +194,9 @@ router.post('/game/:groomid/action', async (req, res) => {
 
   const user = await User.findByPk(uid);
   if (!user) return res.status(404).json({ code: 1, msg: '用户不存在' });
+  if (user.configured !== 1) {
+    return res.status(401).json({ code: 1, msg: '配置未完成' });
+  }
   let game = {};
   try { game = JSON.parse(room.gamevars || '{}'); } catch (e) {}
 
