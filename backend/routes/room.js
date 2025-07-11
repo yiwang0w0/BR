@@ -77,7 +77,16 @@ router.post('/rooms/:id/join', async (req, res) => {
 
   const user = await User.findByPk(req.user.uid);
   if (!user) return res.status(404).json({ code: 1, msg: '用户不存在' });
-  if (user.roomid > 0) return res.json({ code: 1, msg: '已在房间中' });
+  if (user.roomid > 0) {
+    if (parseInt(user.roomid) !== parseInt(groomid)) {
+      return res.json({ code: 1, msg: '已在房间中' });
+    }
+    let curGame = {};
+    try { curGame = JSON.parse(room.gamevars || '{}'); } catch (e) {}
+    if (curGame.players && curGame.players[user.uid]) {
+      return res.json({ code: 1, msg: '已在房间中' });
+    }
+  }
 
   await user.update({ roomid: groomid });
   await logger.logSave(user.uid, 'system', `加入房间${groomid}`);
